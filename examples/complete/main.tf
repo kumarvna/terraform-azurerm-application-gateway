@@ -1,6 +1,11 @@
+# Azurerm Provider configuration
+provider "azurerm" {
+  features {}
+}
+
 module "app-gateway" {
   //  source = "github.com/tietoevry-infra-as-code/terraform-azurerm-application-gateway?ref=v1.0.0"
-  source = "../"
+  source = "../../"
   # Resource Group and location, VNet and Subnet detials (Required)
   resource_group_name  = "rg-shared-westeurope-01"
   location             = "westeurope"
@@ -11,9 +16,9 @@ module "app-gateway" {
 
   /* # (Optional) To enable Azure Monitoring and install log analytics agents
   log_analytics_workspace_name = "logaws-yhjhmxvd-default-hub-westeurope"
-  hub_storage_account_name     = "stdiaglogsdefaulthub"
+  storage_account_name     = "stdiaglogsdefaulthub"
 */
-  app_gateway_sku = {
+  sku = {
     name     = "Standard_Small"
     tier     = "Standard"
     capacity = 1
@@ -32,11 +37,11 @@ module "app-gateway" {
     request_timeout       = 300
   }
 
-  request_routing_rules = {
+  request_routing_rule = {
     rule_type = "Basic"
   }
 
-  http_listeners = {
+  http_listener = {
     name      = "appgw-testgateway-westeurope-http-lst"
     protocol  = "Https"
     host_name = "example.com"

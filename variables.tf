@@ -28,7 +28,7 @@ variable "log_analytics_workspace_name" {
   default     = null
 }
 
-variable "hub_storage_account_name" {
+variable "storage_account_name" {
   description = "The name of the hub storage account to store logs"
   default     = null
 }
@@ -48,14 +48,28 @@ variable "enable_http2" {
   default     = false
 }
 
-variable "app_gateway_sku" {
-  description = "The sku pricing model of v1 and v2"
-  type        = object({ name = string, tier = string, capacity = number })
+variable "zones" {
+  description = "A collection of availability zones to spread the Application Gateway over."
+  type        = list(string)
+  default     = [] #["1", "2", "3"]
 }
 
-variable "capacity" {
+variable "sku" {
+  description = "The sku pricing model of v1 and v2"
+  type = object({
+    name     = string
+    tier     = string
+    capacity = number
+  })
+}
+
+variable "autoscale_configuration" {
   description = "Minimum or Maximum capacity for autoscaling. Accepted values are for Minimum in the range 0 to 100 and for Maximum in the range 2 to 125"
-  default     = {}
+  type = object({
+    min_capacity = number
+    max_capacity = optional(number)
+  })
+  default = null
 }
 
 variable "private_ip_address" {
@@ -70,34 +84,73 @@ variable "frontend_port" {
 
 variable "backend_address_pool" {
   description = "List of backend address pools"
-  default     = {}
+  type = object({
+    fqdns        = optional(list(string))
+    ip_addresses = optional(list(string))
+  })
 }
 
 variable "backend_http_settings" {
   description = "List of backend HTTP settings."
-  default     = {}
+  type = object({
+    cookie_based_affinity               = string
+    affinity_cookie_name                = optional(string)
+    path                                = optional(string)
+    port                                = number
+    probe_name                          = optional(string)
+    protocol                            = string
+    request_timeout                     = number
+    host_name                           = optional(string)
+    pick_host_name_from_backend_address = optional(bool)
+    authentication_certificate = optional(object({
+      name = string
+    }))
+    trusted_root_certificate_names = optional(list(string))
+    connection_draining = optional(object({
+      enable_connection_draining = bool
+      drain_timeout_sec          = number
+    }))
+  })
 }
+
+
+variable "http_listener" {
+  description = "List of HTTP listeners."
+  type = object({
+    host_name            = optional(string)
+    host_names           = optional(list(string))
+    protocol             = string
+    require_sni          = optional(bool)
+    ssl_certificate_name = optional(string)
+    firewall_policy_id   = optional(string)
+    custom_error_configuration = optional(object({
+      status_code           = string
+      custom_error_page_url = string
+    }))
+  })
+}
+
+variable "request_routing_rule" {
+  description = "Request routing rules to be used for listeners."
+  type = object({
+    rule_type                   = string
+    redirect_configuration_name = optional(string)
+    rewrite_rule_set_name       = optional(string)
+    url_path_map_name           = optional(string)
+  })
+}
+
+
+
+
 
 variable "health_probe" {
   description = "Health probes used to test backend health."
   default     = {}
 }
 
-variable "http_listeners" {
-  description = "List of HTTP listeners."
-  default     = {}
-}
 
-variable "request_routing_rules" {
-  description = "Request routing rules to be used for listeners."
-  default     = {}
-}
 
-variable "zones" {
-  description = "A collection of availability zones to spread the Application Gateway over."
-  type        = list(string)
-  default     = [] #["1", "2", "3"]
-}
 
 variable "ssl_certificate" {
   description = "SSL certificate data for Application gateway"
