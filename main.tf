@@ -129,7 +129,7 @@ resource "azurerm_application_gateway" "main" {
       affinity_cookie_name                = lookup(var.backend_http_settings, "affinity_cookie_name", null)
       path                                = lookup(var.backend_http_settings, "path", "/")
       port                                = lookup(var.backend_http_settings, "port", 443)
-      probe_name                          = lookup(var.backend_http_settings, "probe_name", local.probe_name)
+      probe_name                          = lookup(var.backend_http_settings, "probe_name", null)
       protocol                            = lookup(var.backend_http_settings, "protocol", "Https")
       request_timeout                     = lookup(var.backend_http_settings, "request_timeout", 30)
       host_name                           = var.backend_http_settings.pick_host_name_from_backend_address == false ? lookup(var.backend_http_settings, "host_name") : null
@@ -182,8 +182,8 @@ resource "azurerm_application_gateway" "main" {
       name                        = lookup(var.request_routing_rule, "name", local.request_routing_rule_name)
       rule_type                   = lookup(var.request_routing_rule, "rule_type", "Basic")
       http_listener_name          = local.http_listener_name
-      backend_address_pool_name   = var.request_routing_rule.redirect_configuration_name != null ? local.backend_address_pool_name : null
-      backend_http_settings_name  = var.request_routing_rule.redirect_configuration_name != null ? local.backend_http_settings_name : null
+      backend_address_pool_name   = var.request_routing_rule.redirect_configuration_name == null ? local.backend_address_pool_name : null
+      backend_http_settings_name  = var.request_routing_rule.redirect_configuration_name == null ? local.backend_http_settings_name : null
       redirect_configuration_name = lookup(var.request_routing_rule, "redirect_configuration_name", null)
       rewrite_rule_set_name       = lookup(var.request_routing_rule, "rewrite_rule_set_name", null)
       url_path_map_name           = lookup(var.request_routing_rule, "url_path_map_name", null)

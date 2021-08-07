@@ -35,12 +35,12 @@ variable "storage_account_name" {
 
 variable "public_ip_allocation_method" {
   description = "Defines the allocation method for this IP address. Possible values are Static or Dynamic"
-  default     = "Static"
+  default     = "Dynamic"
 }
 
 variable "public_ip_sku" {
   description = "The SKU of the Public IP. Accepted values are Basic and Standard. Defaults to Basic"
-  default     = "Standard"
+  default     = "Basic"
 }
 
 variable "enable_http2" {
