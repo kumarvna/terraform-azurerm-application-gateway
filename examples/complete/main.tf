@@ -24,9 +24,16 @@ module "app-gateway" {
     capacity = 1
   }
 
-  backend_address_pool = {
-    fqdns = ["example.com"]
-  }
+  backend_address_pools = [
+    {
+      name  = "appgw-testgateway-westeurope-bapool01"
+      fqdns = ["example1.com", "example2.com"]
+    },
+    {
+      name         = "appgw-testgateway-westeurope-bapool02"
+      ip_addresses = ["1.2.3.4", "2.3.4.5"]
+    }
+  ]
 
   backend_http_settings = {
     cookie_based_affinity = "Disabled"
@@ -67,7 +74,7 @@ module "app-gateway" {
     }
   ]
  */
-/* 
+  /* 
   custom_error_configuration = [
     {
       custom_error_page_url = "https://example.com/custom_error_403_page.html"
@@ -78,6 +85,22 @@ module "app-gateway" {
       status_code           = "HttpStatus502"
     }
   ] */
+
+  url_path_maps = [
+    {
+      name = "testgateway-url-path"
+      path_rules = [
+        {
+          name  = "api"
+          paths = ["/api/*"]
+        },
+        {
+          name  = "videos"
+          paths = ["/videos/*"]
+        }
+      ]
+    }
+  ]
 
   # a list with a single user managed identity id to be assigned
   /*   identity_ids = ["${azurerm_user_assigned_identity.example.id}"] */

@@ -87,12 +87,13 @@ variable "frontend_port" {
   default     = 80
 }
 
-variable "backend_address_pool" {
+variable "backend_address_pools" {
   description = "List of backend address pools"
-  type = object({
+  type = list(object({
+    name         = string
     fqdns        = optional(list(string))
     ip_addresses = optional(list(string))
-  })
+  }))
 }
 
 variable "backend_http_settings" {
@@ -215,10 +216,31 @@ variable "health_probe" {
   default = null
 }
 
-variable "url_path_maps" {
+/* variable "url_path_maps" {
   description = "List of URL path maps associated to path-based rules"
   type        = any
   default     = []
+} */
+
+variable "url_path_maps" {
+  description = "URL path maps associated to path-based rules."
+  default     = []
+  type = list(object({
+    name                                = string
+    default_backend_http_settings_name  = optional(string)
+    default_backend_address_pool_name   = optional(string)
+    default_redirect_configuration_name = optional(string)
+    default_rewrite_rule_set_name       = optional(string)
+    path_rules = list(object({
+      name                        = string
+      backend_address_pool_name   = optional(string)
+      backend_http_settings_name  = optional(string)
+      paths                       = list(string)
+      redirect_configuration_name = optional(string)
+      rewrite_rule_set_name       = optional(string)
+      firewall_policy_id          = optional(string)
+    }))
+  }))
 }
 
 variable "redirect_configuration" {

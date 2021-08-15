@@ -104,11 +104,11 @@ resource "azurerm_application_gateway" "main" {
   # Backend Address Pool Configuration
   #----------------------------------------------------------
   dynamic "backend_address_pool" {
-    for_each = var.backend_address_pool != null ? [var.backend_address_pool] : []
+    for_each = var.backend_address_pools[*]
     content {
-      name         = lookup(var.backend_address_pool, "name", local.backend_address_pool_name)
-      fqdns        = lookup(var.backend_address_pool, "fqdns", null)
-      ip_addresses = lookup(var.backend_address_pool, "ip_addresses", null)
+      name         = backend_address_pool.value.name
+      fqdns        = backend_address_pool.value.fqdns
+      ip_addresses = backend_address_pool.value.ip_addresses
     }
   }
 
@@ -278,22 +278,22 @@ resource "azurerm_application_gateway" "main" {
   dynamic "url_path_map" {
     for_each = var.url_path_maps[*]
     content {
-      name                                = lookup(var.url_path_maps, "name", null)
-      default_backend_address_pool_name   = var.url_path_maps.default_redirect_configuration_name == null ? local.backend_address_pool_name : null
-      default_backend_http_settings_name  = var.url_path_maps.default_redirect_configuration_name == null ? local.backend_http_settings_name : null
-      default_redirect_configuration_name = lookup(var.url_path_maps, "default_redirect_configuration_name", null)
-      default_rewrite_rule_set_name       = lookup(var.url_path_maps, "default_rewrite_rule_set_name", null)
+      name                                = url_path_map.value.name
+      default_backend_http_settings_name  = url_path_map.value.default_redirect_configuration_name == null ? local.backend_address_pool_name : null
+      default_backend_address_pool_name   = url_path_map.value.default_redirect_configuration_name == null ? local.backend_http_settings_name : null
+      default_redirect_configuration_name = lookup(url_path_map.value, "default_redirect_configuration_name", null)
+      default_rewrite_rule_set_name       = lookup(url_path_map.value, "default_rewrite_rule_set_name", null)
 
       dynamic "path_rule" {
-        for_each = lookup(var.url_path_maps.value, "path_rule")
+        for_each = url_path_map.value.path_rules[*]
         content {
-          name                        = lookup(var.url_path_maps.path_rule.value, "path_rule_name", null)
-          paths                       = flatten([lookup(var.url_path_maps.path_rule.value, "paths", null)])
-          backend_address_pool_name   = var.url_path_maps.path_rule.value.redirect_configuration_name == null ? local.backend_address_pool_name : null
-          backend_http_settings_name  = var.url_path_maps.path_rule.value.redirect_configuration_name == null ? local.backend_http_settings_name : null
-          redirect_configuration_name = lookup(var.url_path_maps.path_rule.value, "redirect_configuration_name", null)
-          rewrite_rule_set_name       = lookup(var.url_path_maps.path_rule.value, "rewrite_rule_set_name", null)
-          firewall_policy_id          = lookup(var.url_path_maps.path_rule.value, "firewall_policy_id", null)
+          name                        = path_rule.value.name
+          backend_address_pool_name   = path_rule.value.redirect_configuration_name == null ? local.backend_address_pool_name : null
+          backend_http_settings_name  = path_rule.value.backend_http_settings_name == null ? local.backend_http_settings_name : null
+          paths                       = path_rule.value.paths
+          redirect_configuration_name = lookup(path_rule.value, "redirect_configuration_name", null)
+          rewrite_rule_set_name       = lookup(path_rule.value, "rewrite_rule_set_name", null)
+          firewall_policy_id          = lookup(path_rule.value, "firewall_policy_id", null)
         }
       }
     }
