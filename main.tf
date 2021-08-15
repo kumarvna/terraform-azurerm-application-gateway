@@ -325,23 +325,58 @@ resource "azurerm_application_gateway" "main" {
     }
   }
 
+  #----------------------------------------------------------
+  # Rewrite Rules Set configuration
+  #----------------------------------------------------------
+  dynamic "rewrite_rule_set" {
+    for_each = var.rewrite_rule_set[*]
+    content {
+      name = var.rewrite_rule_set.name
+
+      dynamic "rewrite_rule" {
+        for_each = lookup(var.rewrite_rule_set, "rewrite_rules", [])
+        content {
+          name          = rewrite_rule.value.name
+          rule_sequence = rewrite_rule.value.rule_sequence
+
+          dynamic "condition" {
+            for_each = lookup(rewrite_rule_set.value, "condition", [])
+            content {
+              variable    = condition.value.variable
+              pattern     = condition.value.pattern
+              ignore_case = condition.value.ignore_case
+              negate      = condition.value.negate
+            }
+          }
+
+          dynamic "request_header_configuration" {
+            for_each = lookup(rewrite_rule.value, "request_header_configuration", [])
+            content {
+              header_name  = request_header_configuration.value.header_name
+              header_value = request_header_configuration.value.header_value
+            }
+          }
+
+          dynamic "response_header_configuration" {
+            for_each = lookup(rewrite_rule.value, "response_header_configuration", [])
+            content {
+              header_name  = response_header_configuration.value.header_name
+              header_value = response_header_configuration.value.header_value
+            }
+          }
+
+          dynamic "url" {
+            for_each = lookup(rewrite_rule.value, "url", [])
+            content {
+              path         = url.value.path
+              query_string = url.value.query_string
+              reroute      = url.value.reroute
+            }
+          }
+        }
+      }
+    }
+  }
+
 
 }
-
-
-
-/* 
-
-backend addresspools -map
-backend_http_settings - map
-http_listenr - map
-request_routing_rule - map
-
-optional: 
-
-waf_configuration
-custom_error_configuration
-firewall_policy_id
-
-rewrite_rule_set
- */

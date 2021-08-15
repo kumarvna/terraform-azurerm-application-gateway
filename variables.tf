@@ -233,6 +233,12 @@ variable "custom_error_configuration" {
   default     = []
 }
 
+variable "rewrite_rule_set" {
+  description = "List of rewrite rule set including rewrite rules"
+  type        = any
+  default     = []
+}
+
 variable "waf_enabled" {
   description = "Is the Web Application Firewall be enabled?"
   default     = false
