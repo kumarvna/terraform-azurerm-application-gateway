@@ -227,6 +227,12 @@ variable "redirect_configuration" {
   default     = []
 }
 
+variable "custom_error_configuration" {
+  description = "Global level custom error configuration for application gateway"
+  type        = list(map(string))
+  default     = []
+}
+
 variable "waf_enabled" {
   description = "Is the Web Application Firewall be enabled?"
   default     = false

@@ -67,7 +67,19 @@ module "app-gateway" {
     }
   ]
  */
+/* 
+  custom_error_configuration = [
+    {
+      custom_error_page_url = "https://example.com/custom_error_403_page.html"
+      status_code           = "HttpStatus403"
+    },
+    {
+      custom_error_page_url = "https://example.com/custom_error_502_page.html"
+      status_code           = "HttpStatus502"
+    }
+  ] */
 
+  # a list with a single user managed identity id to be assigned
   /*   identity_ids = ["${azurerm_user_assigned_identity.example.id}"] */
 
   # Adding TAG's to your Azure resources (Required)
