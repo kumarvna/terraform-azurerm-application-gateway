@@ -11,11 +11,9 @@ locals {
   http_listener_name             = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htln"
   listener_name                  = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-httplstn"
   request_routing_rule_name      = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-rqrt"
-  redirect_configuration_name    = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-rdrcfg"
   gateway_ip_configuration_name  = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gwipc"
   ssl_certificate_name           = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl"
   trusted_root_certificate_name  = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl-trust-cert"
-  url_path_map_name              = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-upm"
 }
 
 #----------------------------------------------------------
@@ -275,6 +273,8 @@ resource "azurerm_application_gateway" "main" {
       include_query_string = lookup(redirect_configuration.value, "include_query_string", "true")
     }
   }
+
+  
 
 }
 

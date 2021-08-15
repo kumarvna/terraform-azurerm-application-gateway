@@ -55,10 +55,18 @@ module "app-gateway" {
     data     = "./keyBag.pfx"
     password = "lats1234"
   }
-
-  /*   redirect_configuration = {
-    name = "demo-redirect-configuration01"
-  } */
+  /* 
+  redirect_configuration = [
+    {
+      name = "demo-redirect-configuration01"
+    },
+    {
+      name                 = "demo-redirect-configuration02"
+      redirect_type        = "Temporary"
+      include_query_string = false
+    }
+  ]
+ */
 
   /*   identity_ids = ["${azurerm_user_assigned_identity.example.id}"] */
 

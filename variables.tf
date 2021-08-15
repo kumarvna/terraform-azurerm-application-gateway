@@ -56,7 +56,7 @@ variable "zones" {
 
 variable "firewall_policy_id" {
   description = "The ID of the Web Application Firewall Policy which can be associated with app gateway"
-  default = null
+  default     = null
 }
 
 variable "sku" {
@@ -223,8 +223,8 @@ variable "url_path_maps" {
 
 variable "redirect_configuration" {
   description = "list of maps for redirect configurations"
-  type = any
-  default = []
+  type        = list(map(string))
+  default     = []
 }
 
 variable "waf_enabled" {
