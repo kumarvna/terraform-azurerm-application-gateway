@@ -1,16 +1,7 @@
-# terraform-azurerm-application-gateway
-Terraform module to create Azure Application gateway
+# Azure Application Gateway Terraform Module
 
+Azure Application Gateway provides HTTP based load balancing that enables in creating routing rules for traffic based on HTTP. Traditional load balancers operate at the transport level and then route the traffic using source IP address and port to deliver data to a destination IP and port. Application Gateway using additional attributes such as URI (Uniform Resource Identifier) path and host headers to route the traffic.
 
-Name | Description
----- | -----------
-`dh_group`|The DH group used in IKE phase 1 for initial SA. Valid options are `DHGroup1`, `DHGroup14`, `DHGroup2`, `DHGroup2048`, `DHGroup24`, `ECP256`, `ECP384`, or `None`
-`ike_encryption`|The IKE encryption algorithm. Valid options are `AES128`, `AES192`, `AES256`, `DES`, or `DES3`
-`ike_integrity`|The IKE integrity algorithm. Valid options are `MD5`, `SHA1`, `SHA256`, or `SHA384`
-`ipsec_encryption`|The IPSec encryption algorithm. Valid options are `AES128`, `AES192`, `AES256`, `DES`, `DES3`, `GCMAES128`, `GCMAES192`, `GCMAES256`, or `None`
-`ipsec_integrity`|The IPSec integrity algorithm. Valid options are `GCMAES128`, `GCMAES192`, `GCMAES256`, `MD5`, `SHA1`, or `SHA256`
-`pfs_group`|The DH group used in IKE phase 2 for new child SA. Valid options are `ECP256`, `ECP384`, `PFS1`, `PFS2`, `PFS2048`, `PFS24`, or `None`
-`sa_datasize`|The IPSec SA payload size in KB. Must be at least `1024` KB. Defaults to `102400000` KB.
-`sa_lifetime`|The IPSec SA lifetime in seconds. Must be at least `300` seconds. Defaults to `27000` seconds
-| <td colspan=2> This is middle of table 12254458888888888888888888 |
-`sa_datasize`|The IPSec SA payload size in KB. Must be at least `1024` KB. Defaults to `102400000` KB.
+Classic load balances operate at OSI layer 4 - TCP and UDP, while Application Gateway operates at application layer OSI layer 7 for load balancing.
+
+This terraform module quickly creates a desired application gateway with additional options like WAF, Custom Error Configuration, SSL offloading with SSL policies, URL path mapping and many other options.

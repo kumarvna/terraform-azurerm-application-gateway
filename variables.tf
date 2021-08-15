@@ -113,7 +113,6 @@ variable "backend_http_settings" {
   })
 }
 
-
 variable "http_listener" {
   description = "List of HTTP listeners."
   type = object({
@@ -128,6 +127,9 @@ variable "http_listener" {
       custom_error_page_url = string
     }))
   })
+  default = {
+    protocol = "Https"
+  }
 }
 
 variable "request_routing_rule" {
@@ -138,44 +140,96 @@ variable "request_routing_rule" {
     rewrite_rule_set_name       = optional(string)
     url_path_map_name           = optional(string)
   })
+  default = {
+    rule_type = "Basic"
+  }
 }
 
-
-
-
-
-variable "health_probe" {
-  description = "Health probes used to test backend health."
-  default     = {}
+variable "identity_ids" {
+  description = "Specifies a list with a single user managed identity id to be assigned to the Application Gateway"
+  #  type        = list(string)
+  default = null
 }
 
+variable "authentication_certificate" {
+  description = "Authentication certificates to allow the backend with Azure Application Gateway"
+  type = object({
+    name = string
+    data = string
+  })
+  default = null
+}
 
-
-
-variable "ssl_certificate" {
-  description = "SSL certificate data for Application gateway"
-  default     = {}
+variable "trusted_root_certificate" {
+  description = "Trusted root certificates to allow the backend with Azure Application Gateway"
+  type = object({
+    name = string
+    data = string
+  })
+  default = null
 }
 
 variable "ssl_policy" {
   description = "Application Gateway SSL configuration"
-  default     = {}
+  type = object({
+    disabled_protocols   = optional(list(string))
+    policy_type          = optional(string)
+    policy_name          = optional(string)
+    cipher_suites        = optional(list(string))
+    min_protocol_version = optional(string)
+  })
+  default = null
+}
+
+variable "ssl_certificate" {
+  description = "SSL certificate data for Application gateway"
+  type = object({
+    data                = optional(string)
+    password            = optional(string)
+    key_vault_secret_id = optional(string)
+  })
+  default = null
+}
+
+variable "health_probe" {
+  description = "Health probes used to test backend health."
+  type = object({
+    host                                      = string
+    interval                                  = number
+    path                                      = string
+    timeout                                   = number
+    unhealthy_threshold                       = number
+    port                                      = optional(number)
+    pick_host_name_from_backend_http_settings = optional(bool)
+    minimum_servers                           = optional(number)
+    match = optional(object({
+      body        = optional(string)
+      status_code = optional(list(string))
+    }))
+  })
+  default = null
 }
 
 variable "url_path_maps" {
-  description = "URL path maps associated to path-based rules."
-  default     = []
-  type = list(object({
-    name                               = string
-    default_backend_http_settings_name = string
-    default_backend_address_pool_name  = string
-    path_rules = list(object({
-      name                       = string
-      backend_address_pool_name  = string
-      backend_http_settings_name = string
-      paths                      = list(string)
+  description = "List of URL path maps associated to path-based rules"
+  /*   type = list(object({
+    name                                = string
+    default_backend_address_pool_name   = optional(string)
+    default_backend_http_settings_name  = optional(string)
+    default_redirect_configuration_name = optional(string)
+    default_rewrite_rule_set_name       = optional(string)
+    path_rule = list(object({
+      name                        = string
+      paths                       = list(string)
+      backend_address_pool_name   = optional(string)
+      backend_http_settings_name  = optional(string)
+      redirect_configuration_name = optional(string)
+      rewrite_rule_set_name       = optional(string)
+      firewall_policy_id          = optional(string)
     }))
-  }))
+  })) */
+  type    = any
+  default = []
 }
 
 variable "waf_enabled" {

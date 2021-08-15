@@ -15,7 +15,7 @@ locals {
   gateway_ip_configuration_name  = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gwipc"
   ssl_certificate_name           = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl"
   trusted_root_certificate_name  = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl-trust-cert"
-  url_path_map_name              = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-upm-name"
+  url_path_map_name              = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-upm"
 }
 
 #----------------------------------------------------------
@@ -182,11 +182,117 @@ resource "azurerm_application_gateway" "main" {
       name                        = lookup(var.request_routing_rule, "name", local.request_routing_rule_name)
       rule_type                   = lookup(var.request_routing_rule, "rule_type", "Basic")
       http_listener_name          = local.http_listener_name
-      backend_address_pool_name   = var.request_routing_rule.redirect_configuration_name == null ? local.backend_address_pool_name : null
+      backend_address_pool_name   = var.request_routing_rule.redirect_configuration_name == null ? local.backend_address_pool_name : null #local.backend_address_pool_name : null
       backend_http_settings_name  = var.request_routing_rule.redirect_configuration_name == null ? local.backend_http_settings_name : null
       redirect_configuration_name = lookup(var.request_routing_rule, "redirect_configuration_name", null)
       rewrite_rule_set_name       = lookup(var.request_routing_rule, "rewrite_rule_set_name", null)
       url_path_map_name           = lookup(var.request_routing_rule, "url_path_map_name", null)
+    }
+  }
+
+  dynamic "identity" {
+    for_each = var.identity_ids != null ? [1] : []
+    content {
+      type         = "UserAssigned"
+      identity_ids = var.identity_ids
+    }
+  }
+  dynamic "authentication_certificate" {
+    for_each = var.authentication_certificate != null ? [var.authentication_certificate] : []
+    content {
+      name = var.authentication_certificate.name
+      data = filebase64(lookup(var.authentication_certificate, "data"))
+    }
+  }
+
+  dynamic "trusted_root_certificate" {
+    for_each = var.trusted_root_certificate != null ? [var.trusted_root_certificate] : []
+    content {
+      name = var.trusted_root_certificate.name
+      data = filebase64(lookup(var.trusted_root_certificate, "data"))
+    }
+  }
+
+  dynamic "ssl_policy" {
+    for_each = var.ssl_policy != null ? [var.ssl_policy] : []
+    content {
+      disabled_protocols   = var.ssl_policy.policy_type == null && var.ssl_policy.policy_name == null ? var.ssl_policy.disabled_protocols : null
+      policy_type          = lookup(var.ssl_policy, "policy_type", "Predefined")
+      policy_name          = var.ssl_policy.policy_type == "Predefined" ? var.ssl_policy.policy_name : null
+      cipher_suites        = var.ssl_policy.policy_type == "Custom" ? var.ssl_policy.cipher_suites : null
+      min_protocol_version = var.ssl_policy.min_protocol_version
+    }
+  }
+
+  dynamic "ssl_certificate" {
+    for_each = var.ssl_certificate != null ? [var.ssl_certificate] : []
+    content {
+      name                = local.ssl_certificate_name
+      data                = var.ssl_certificate.key_vault_secret_id == null ? filebase64(lookup(var.ssl_certificate, "data")) : null
+      password            = var.ssl_certificate.key_vault_secret_id == null ? var.ssl_certificate.password : null
+      key_vault_secret_id = lookup(var.ssl_certificate, "key_vault_secret_id", null)
+    }
+  }
+
+  dynamic "probe" {
+    for_each = var.health_probe != null ? [var.health_probe] : []
+    content {
+      name                                      = local.http_probe_name
+      host                                      = var.health_probe.pick_host_name_from_backend_address == false ? lookup(var.health_probe, "host", "127.0.0.1") : null
+      interval                                  = lookup(var.health_probe, "interval", 30)
+      protocol                                  = var.health_probe.port == 80 ? "Http" : "Https"
+      path                                      = lookup(var.health_probe, "path", "/")
+      timeout                                   = lookup(var.health_probe, "timeout", 30)
+      unhealthy_threshold                       = lookup(var.health_probe, "unhealthy_threshold", 3)
+      port                                      = lookup(var.health_probe, "port", 80)
+      pick_host_name_from_backend_http_settings = lookup(var.health_probe, "pick_host_name_from_backend_http_settings", false)
+      minimum_servers                           = lookup(var.health_probe, "minimum_servers", 0)
+    }
+  }
+
+  /* 
+  dynamic "url_path_map" {
+    for_each = var.url_path_maps != null ? [var.url_path_maps] : []
+    content {
+      name                                = lookup(var.url_path_maps, "name", local.url_path_map_name)
+      default_backend_address_pool_name   = var.url_path_maps.default_redirect_configuration_name == null ? local.backend_address_pool_name : null
+      default_backend_http_settings_name  = var.url_path_maps.default_redirect_configuration_name == null ? local.backend_http_settings_name : null
+      default_redirect_configuration_name = lookup(var.url_path_maps, "default_redirect_configuration_name", null)
+      default_rewrite_rule_set_name       = lookup(var.url_path_maps, "default_rewrite_rule_set_name", null)
+      path_rule = {
+        name                        = var.url_path_maps.path_rule.name
+        paths                       = var.url_path_maps.path_rule.paths
+        backend_address_pool_name   = var.url_path_maps.path_rule.redirect_configuration_name == null ? local.backend_address_pool_name : null
+        backend_http_settings_name  = var.url_path_maps.path_rule.redirect_configuration_name == null ? local.backend_http_settings_name : null
+        redirect_configuration_name = lookup(var.url_path_maps.path_rule, "redirect_configuration_name", null)
+        rewrite_rule_set_name       = lookup(var.url_path_maps.path_rule, "rewrite_rule_set_name", null)
+        firewall_policy_id          = lookup(var.url_path_maps.path_rule, "firewall_policy_id", null)
+      }
+    }
+  }
+ */
+
+  dynamic "url_path_map" {
+    for_each = var.url_path_maps != null ? [var.url_path_maps] : []
+    content {
+      name                                = lookup(var.url_path_maps, "name", null)
+      default_backend_address_pool_name   = var.url_path_maps.default_redirect_configuration_name == null ? local.backend_address_pool_name : null
+      default_backend_http_settings_name  = var.url_path_maps.default_redirect_configuration_name == null ? local.backend_http_settings_name : null
+      default_redirect_configuration_name = lookup(var.url_path_maps, "default_redirect_configuration_name", null)
+      default_rewrite_rule_set_name       = lookup(var.url_path_maps, "default_rewrite_rule_set_name", null)
+
+      dynamic "path_rule" {
+        for_each = lookup(var.url_path_maps.value, "path_rule")
+        content {
+          name                        = lookup(var.url_path_maps.path_rule.value, "path_rule_name", null)
+          paths                       = flatten([lookup(var.url_path_maps.path_rule.value, "paths", null)])
+          backend_address_pool_name   = var.url_path_maps.path_rule.value.redirect_configuration_name == null ? local.backend_address_pool_name : null
+          backend_http_settings_name  = var.url_path_maps.path_rule.value.redirect_configuration_name == null ? local.backend_http_settings_name : null
+          redirect_configuration_name = lookup(var.url_path_maps.path_rule.value, "redirect_configuration_name", null)
+          rewrite_rule_set_name       = lookup(var.url_path_maps.path_rule.value, "rewrite_rule_set_name", null)
+          firewall_policy_id          = lookup(var.url_path_maps.path_rule.value, "firewall_policy_id", null)
+        }
+      }
     }
   }
 
@@ -195,27 +301,13 @@ resource "azurerm_application_gateway" "main" {
 
 
 /* 
-must:
-name
-rg
-location
-sku 
-autoscale_configuration
-gateway_ip_configuration 
-frontend_ip_configuration
-frontend_port 
-backend_address_pool
-backend_http_settings
-http_listener
-request_routing_rule
 
-optional:
-identity 
-authentication_certificate
-trusted_root_certificate 
-ssl_policy
-ssl_certificate 
-probe 
+backend addresspools -map
+backend_http_settings - map
+http_listenr - map
+request_routing_rule - map
+
+optional: 
 url_path_map
 waf_configuration
 custom_error_configuration
