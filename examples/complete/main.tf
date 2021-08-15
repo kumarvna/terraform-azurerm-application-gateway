@@ -35,21 +35,60 @@ module "app-gateway" {
     }
   ]
 
-  backend_http_settings = {
-    cookie_based_affinity = "Disabled"
-    path                  = "/"
-    port                  = 443
-    protocol              = "Https"
-    request_timeout       = 300
-  }
+  backend_http_settings = [
+    {
+      name                  = "appgw-testgateway-westeurope-be-http-set1"
+      cookie_based_affinity = "Disabled"
+      path                  = "/"
+      enable_https          = true
+      request_timeout       = 30
+      connection_draining = {
+        enable_connection_draining = true
+        drain_timeout_sec          = 300
+
+      }
+    },
+    {
+      name                  = "appgw-testgateway-westeurope-be-http-set2"
+      cookie_based_affinity = "Enabled"
+      path                  = "/"
+      enable_https          = false
+      request_timeout       = 30
+    }
+  ]
 
   request_routing_rule = {
     rule_type = "Basic"
   }
 
-  http_listener = {
-    protocol = "Https"
-  }
+  http_listeners = [
+    {
+      name                 = "appgw-testgateway-westeurope-be-htln"
+      ssl_certificate_name = null
+      host_name            = null
+      custom_error_configuration = [
+        {
+          custom_error_page_url = "https://example.com/custom_error_403_page.html"
+          status_code           = "HttpStatus403"
+        },
+        {
+          custom_error_page_url = "https://example.com/custom_error_502_page.html"
+          status_code           = "HttpStatus502"
+        }
+      ]
+    },
+    {
+      name                 = "appgw-testgateway-westeurope-be-htln02"
+      ssl_certificate_name = null
+      host_name            = null
+      custom_error_configuration = [
+        {
+          custom_error_page_url = "https://example.com/custom_error_403_page.html"
+          status_code           = "HttpStatus403"
+        }
+      ]
+    }
+  ]
 
   # Application Gateway has three predefined security policies to get the appropriate level of security
   # AppGwSslPolicy20150501 - MinProtocolVersion(TLSv1_0), AppGwSslPolicy20170401 - MinProtocolVersion(TLSv1_1), AppGwSslPolicy20170401S - MinProtocolVersion(TLSv1_2)

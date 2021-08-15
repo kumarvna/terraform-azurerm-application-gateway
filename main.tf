@@ -2,18 +2,18 @@
 # Local declarations
 #---------------------------
 locals {
-  backend_address_pool_name      = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-bapool"
-  backend_http_settings_name     = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-http-set"
+  backend_address_pool_name      = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-bapool"      # remove
+  backend_http_settings_name     = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-http-set" # remove
   frontend_port_name             = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-feport"
   frontend_ip_configuration_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-feip"
-  backend_http_settings          = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htst"
-  http_probe_name                = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htpb"
-  http_listener_name             = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htln"
-  listener_name                  = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-httplstn"
-  request_routing_rule_name      = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-rqrt"
-  gateway_ip_configuration_name  = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gwipc"
-  ssl_certificate_name           = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl"
-  trusted_root_certificate_name  = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl-trust-cert"
+  #backend_http_settings          = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htst"
+  http_probe_name    = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htpb"
+  http_listener_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htln" # remove
+  #  listener_name                 = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-httplstn" # remove
+  request_routing_rule_name     = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-rqrt"
+  gateway_ip_configuration_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gwipc"
+  ssl_certificate_name          = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl"
+  trusted_root_certificate_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl-trust-cert"
 }
 
 #----------------------------------------------------------
@@ -53,8 +53,9 @@ resource "azurerm_public_ip" "pip" {
   name                = lower("${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gw-pip")
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
-  allocation_method   = var.sku.tier == "Standard" ? "Dynamic" : "Static" #var.public_ip_allocation_method
-  sku                 = var.sku.tier == "Standard" ? "Basic" : "Standard" #var.public_ip_sku
+  allocation_method   = var.sku.tier == "Standard" ? "Dynamic" : "Static"
+  sku                 = var.sku.tier == "Standard" ? "Basic" : "Standard"
+  domain_name_label   = var.domain_name_label
   tags                = merge({ "ResourceName" = lower("${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gw-pip") }, var.tags, )
 }
 
@@ -104,7 +105,7 @@ resource "azurerm_application_gateway" "main" {
   # Backend Address Pool Configuration
   #----------------------------------------------------------
   dynamic "backend_address_pool" {
-    for_each = var.backend_address_pools[*]
+    for_each = var.backend_address_pools
     content {
       name         = backend_address_pool.value.name
       fqdns        = backend_address_pool.value.fqdns
@@ -116,33 +117,33 @@ resource "azurerm_application_gateway" "main" {
   # Backend HTTP Settings
   #----------------------------------------------------------
   dynamic "backend_http_settings" {
-    for_each = var.backend_http_settings != null ? [var.backend_http_settings] : []
+    for_each = var.backend_http_settings
     content {
-      name                                = lookup(var.backend_http_settings, "name", local.backend_http_settings_name)
-      cookie_based_affinity               = lookup(var.backend_http_settings, "cookie_based_affinity", "Disabled")
-      affinity_cookie_name                = lookup(var.backend_http_settings, "affinity_cookie_name", null)
-      path                                = lookup(var.backend_http_settings, "path", "/")
-      port                                = lookup(var.backend_http_settings, "port", 443)
-      probe_name                          = lookup(var.backend_http_settings, "probe_name", null)
-      protocol                            = lookup(var.backend_http_settings, "protocol", "Https")
-      request_timeout                     = lookup(var.backend_http_settings, "request_timeout", 30)
-      host_name                           = var.backend_http_settings.pick_host_name_from_backend_address == false ? lookup(var.backend_http_settings, "host_name") : null
-      pick_host_name_from_backend_address = lookup(var.backend_http_settings, "pick_host_name_from_backend_address", false)
+      name                                = backend_http_settings.value.name
+      cookie_based_affinity               = lookup(backend_http_settings.value, "cookie_based_affinity", "Disabled")
+      affinity_cookie_name                = lookup(backend_http_settings.value, "affinity_cookie_name", null)
+      path                                = lookup(backend_http_settings.value, "path", "/")
+      port                                = backend_http_settings.value.enable_https ? 443 : 80
+      probe_name                          = lookup(backend_http_settings.value, "probe_name", null)
+      protocol                            = backend_http_settings.value.enable_https ? "Https" : "Http"
+      request_timeout                     = lookup(backend_http_settings.value, "request_timeout", 30)
+      host_name                           = backend_http_settings.value.pick_host_name_from_backend_address == false ? lookup(backend_http_settings.value, "host_name") : null
+      pick_host_name_from_backend_address = lookup(backend_http_settings.value, "pick_host_name_from_backend_address", false)
 
       dynamic "authentication_certificate" {
-        for_each = var.backend_http_settings.authentication_certificate != null ? [var.backend_http_settings.authentication_certificate] : []
+        for_each = backend_http_settings.value.authentication_certificate[*]
         content {
-          name = var.backend_http_settings.authentication_certificate.name
+          name = authentication_certificate.value.name
         }
       }
 
-      trusted_root_certificate_names = lookup(var.backend_http_settings, "trusted_root_certificate_names", null)
+      trusted_root_certificate_names = lookup(backend_http_settings.value, "trusted_root_certificate_names", null)
 
       dynamic "connection_draining" {
-        for_each = var.backend_http_settings.connection_draining != null ? [var.backend_http_settings.connection_draining] : []
+        for_each = backend_http_settings.value.connection_draining[*]
         content {
-          enabled           = var.backend_http_settings.enable_connection_draining
-          drain_timeout_sec = var.backend_http_settings.connection_drain_timeout
+          enabled           = connection_draining.value.enable_connection_draining
+          drain_timeout_sec = connection_draining.value.drain_timeout_sec
         }
       }
     }
@@ -152,22 +153,22 @@ resource "azurerm_application_gateway" "main" {
   # HTTP Listener Configuration
   #----------------------------------------------------------
   dynamic "http_listener" {
-    for_each = var.http_listener != null ? [var.http_listener] : []
+    for_each = var.http_listeners
     content {
-      name                           = lookup(var.http_listener, "name", local.http_listener_name)
+      name                           = http_listener.value.name
       frontend_ip_configuration_name = local.frontend_ip_configuration_name
       frontend_port_name             = var.frontend_port == 80 ? "${local.frontend_port_name}-80" : "${local.frontend_port_name}-443"
-      host_name                      = lookup(var.http_listener, "host_name", null)
-      host_names                     = lookup(var.http_listener, "host_names", null)
+      host_name                      = lookup(http_listener.value, "host_name", null)
+      host_names                     = lookup(http_listener.value, "host_names", null)
       protocol                       = var.frontend_port == 80 ? "Http" : "Https"
-      require_sni                    = lookup(var.http_listener, "require_sni", false)
-      ssl_certificate_name           = var.frontend_port == 443 ? local.ssl_certificate_name : null
-      firewall_policy_id             = var.http_listener.firewall_policy_id
+      require_sni                    = http_listener.value.ssl_certificate_name != null ? http_listener.value.require_sni : null
+      ssl_certificate_name           = var.frontend_port == 443 ? http_listener.value.ssl_certificate_name : null
+      firewall_policy_id             = http_listener.value.firewall_policy_id
       dynamic "custom_error_configuration" {
-        for_each = var.http_listener.custom_error_configuration != null ? [var.http_listener.custom_error_configuration] : []
+        for_each = http_listener.value.custom_error_configuration[*]
         content {
-          status_code           = var.http_listener.custom_error_configuration.status_code
-          custom_error_page_url = var.http_listener.custom_error_configuration.custom_error_page_url
+          status_code           = custom_error_configuration.value.status_code
+          custom_error_page_url = custom_error_configuration.value.custom_error_page_url
         }
       }
     }

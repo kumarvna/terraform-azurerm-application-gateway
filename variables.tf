@@ -33,14 +33,9 @@ variable "storage_account_name" {
   default     = null
 }
 
-variable "public_ip_allocation_method" {
-  description = "Defines the allocation method for this IP address. Possible values are Static or Dynamic"
-  default     = "Dynamic"
-}
-
-variable "public_ip_sku" {
-  description = "The SKU of the Public IP. Accepted values are Basic and Standard. Defaults to Basic"
-  default     = "Basic"
+variable "domain_name_label" {
+  description = "Label for the Domain Name. Will be used to make up the FQDN."
+  default = null
 }
 
 variable "enable_http2" {
@@ -98,13 +93,13 @@ variable "backend_address_pools" {
 
 variable "backend_http_settings" {
   description = "List of backend HTTP settings."
-  type = object({
+  type = list(object({
+    name                                = string
     cookie_based_affinity               = string
     affinity_cookie_name                = optional(string)
     path                                = optional(string)
-    port                                = number
+    enable_https                        = bool
     probe_name                          = optional(string)
-    protocol                            = string
     request_timeout                     = number
     host_name                           = optional(string)
     pick_host_name_from_backend_address = optional(bool)
@@ -116,26 +111,23 @@ variable "backend_http_settings" {
       enable_connection_draining = bool
       drain_timeout_sec          = number
     }))
-  })
+  }))
 }
 
-variable "http_listener" {
-  description = "List of HTTP listeners."
-  type = object({
+variable "http_listeners" {
+  description = "List of HTTP/HTTPS listeners. SSL Certificate name is required"
+  type = list(object({
+    name                 = string
     host_name            = optional(string)
     host_names           = optional(list(string))
-    protocol             = string
     require_sni          = optional(bool)
     ssl_certificate_name = optional(string)
     firewall_policy_id   = optional(string)
-    custom_error_configuration = optional(object({
+    custom_error_configuration = optional(list(object({
       status_code           = string
       custom_error_page_url = string
-    }))
-  })
-  default = {
-    protocol = "Https"
-  }
+    })))
+  }))
 }
 
 variable "request_routing_rule" {
@@ -215,12 +207,6 @@ variable "health_probe" {
   })
   default = null
 }
-
-/* variable "url_path_maps" {
-  description = "List of URL path maps associated to path-based rules"
-  type        = any
-  default     = []
-} */
 
 variable "url_path_maps" {
   description = "URL path maps associated to path-based rules."
