@@ -54,6 +54,11 @@ variable "zones" {
   default     = [] #["1", "2", "3"]
 }
 
+variable "firewall_policy_id" {
+  description = "The ID of the Web Application Firewall Policy which can be associated with app gateway"
+  default = null
+}
+
 variable "sku" {
   description = "The sku pricing model of v1 and v2"
   type = object({
@@ -212,23 +217,13 @@ variable "health_probe" {
 
 variable "url_path_maps" {
   description = "List of URL path maps associated to path-based rules"
-  /*   type = list(object({
-    name                                = string
-    default_backend_address_pool_name   = optional(string)
-    default_backend_http_settings_name  = optional(string)
-    default_redirect_configuration_name = optional(string)
-    default_rewrite_rule_set_name       = optional(string)
-    path_rule = list(object({
-      name                        = string
-      paths                       = list(string)
-      backend_address_pool_name   = optional(string)
-      backend_http_settings_name  = optional(string)
-      redirect_configuration_name = optional(string)
-      rewrite_rule_set_name       = optional(string)
-      firewall_policy_id          = optional(string)
-    }))
-  })) */
-  type    = any
+  type        = any
+  default     = []
+}
+
+variable "redirect_configuration" {
+  description = "list of maps for redirect configurations"
+  type = any
   default = []
 }
 

@@ -56,6 +56,10 @@ module "app-gateway" {
     password = "lats1234"
   }
 
+  /*   redirect_configuration = {
+    name = "demo-redirect-configuration01"
+  } */
+
   /*   identity_ids = ["${azurerm_user_assigned_identity.example.id}"] */
 
   # Adding TAG's to your Azure resources (Required)

@@ -48,15 +48,6 @@ data "azurerm_storage_account" "storeacc" {
   resource_group_name = data.azurerm_resource_group.rg.name
 }
 
-resource "random_string" "str" {
-  length  = 6
-  special = false
-  upper   = false
-  keepers = {
-    domain_name_label = var.app_gateway_name
-  }
-}
-
 #-----------------------------------
 # Public IP for Load Balancer
 #-----------------------------------
@@ -64,12 +55,10 @@ resource "azurerm_public_ip" "pip" {
   name                = lower("${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gw-pip")
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
-  allocation_method   = var.public_ip_allocation_method
-  sku                 = var.public_ip_sku
-  domain_name_label   = format("gw%s%s", lower(replace(var.app_gateway_name, "/[[:^alnum:]]/", "")), random_string.str.result)
+  allocation_method   = var.sku.tier == "Standard" ? "Dynamic" : "Static" #var.public_ip_allocation_method
+  sku                 = var.sku.tier == "Standard" ? "Basic" : "Standard" #var.public_ip_sku
   tags                = merge({ "ResourceName" = lower("${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gw-pip") }, var.tags, )
 }
-
 
 resource "azurerm_application_gateway" "main" {
   name                = lower("appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}")
@@ -77,6 +66,7 @@ resource "azurerm_application_gateway" "main" {
   location            = data.azurerm_resource_group.rg.location
   enable_http2        = var.enable_http2
   zones               = var.zones
+  firewall_policy_id  = var.firewall_policy_id != null ? var.firewall_policy_id : null
   tags                = merge({ "ResourceName" = lower("appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}") }, var.tags, )
 
   sku {
@@ -250,30 +240,8 @@ resource "azurerm_application_gateway" "main" {
     }
   }
 
-  /* 
   dynamic "url_path_map" {
-    for_each = var.url_path_maps != null ? [var.url_path_maps] : []
-    content {
-      name                                = lookup(var.url_path_maps, "name", local.url_path_map_name)
-      default_backend_address_pool_name   = var.url_path_maps.default_redirect_configuration_name == null ? local.backend_address_pool_name : null
-      default_backend_http_settings_name  = var.url_path_maps.default_redirect_configuration_name == null ? local.backend_http_settings_name : null
-      default_redirect_configuration_name = lookup(var.url_path_maps, "default_redirect_configuration_name", null)
-      default_rewrite_rule_set_name       = lookup(var.url_path_maps, "default_rewrite_rule_set_name", null)
-      path_rule = {
-        name                        = var.url_path_maps.path_rule.name
-        paths                       = var.url_path_maps.path_rule.paths
-        backend_address_pool_name   = var.url_path_maps.path_rule.redirect_configuration_name == null ? local.backend_address_pool_name : null
-        backend_http_settings_name  = var.url_path_maps.path_rule.redirect_configuration_name == null ? local.backend_http_settings_name : null
-        redirect_configuration_name = lookup(var.url_path_maps.path_rule, "redirect_configuration_name", null)
-        rewrite_rule_set_name       = lookup(var.url_path_maps.path_rule, "rewrite_rule_set_name", null)
-        firewall_policy_id          = lookup(var.url_path_maps.path_rule, "firewall_policy_id", null)
-      }
-    }
-  }
- */
-
-  dynamic "url_path_map" {
-    for_each = var.url_path_maps != null ? [var.url_path_maps] : []
+    for_each = var.url_path_maps[*]
     content {
       name                                = lookup(var.url_path_maps, "name", null)
       default_backend_address_pool_name   = var.url_path_maps.default_redirect_configuration_name == null ? local.backend_address_pool_name : null
@@ -296,6 +264,18 @@ resource "azurerm_application_gateway" "main" {
     }
   }
 
+  dynamic "redirect_configuration" {
+    for_each = var.redirect_configuration[*]
+    content {
+      name                 = lookup(redirect_configuration.value, "name", null)
+      redirect_type        = lookup(redirect_configuration.value, "redirect_type", "Permanent")
+      target_listener_name = lookup(redirect_configuration.value, "target_listener_name", null)
+      target_url           = lookup(redirect_configuration.value, "target_url", null)
+      include_path         = lookup(redirect_configuration.value, "include_path", "true")
+      include_query_string = lookup(redirect_configuration.value, "include_query_string", "true")
+    }
+  }
+
 }
 
 
@@ -308,10 +288,10 @@ http_listenr - map
 request_routing_rule - map
 
 optional: 
-url_path_map
+
 waf_configuration
 custom_error_configuration
 firewall_policy_id
-redirect_configuration
+
 rewrite_rule_set
  */
