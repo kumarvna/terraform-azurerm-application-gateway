@@ -77,11 +77,6 @@ variable "private_ip_address" {
   default     = null
 }
 
-/* variable "frontend_port" {
-  description = " The port used for this Frontend Port."
-  default     = 80
-}
- */
 variable "backend_address_pools" {
   description = "List of backend address pools"
   type = list(object({
@@ -147,7 +142,6 @@ variable "request_routing_rules" {
 
 variable "identity_ids" {
   description = "Specifies a list with a single user managed identity id to be assigned to the Application Gateway"
-  #  type        = list(string)
   default = null
 }
 
