@@ -2,18 +2,9 @@
 # Local declarations
 #---------------------------
 locals {
-  backend_address_pool_name      = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-bapool"      # remove
-  backend_http_settings_name     = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-http-set" # remove
   frontend_port_name             = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-feport"
   frontend_ip_configuration_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-feip"
-  #backend_http_settings          = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htst"
-  http_probe_name    = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htpb"
-  http_listener_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htln" # remove
-  #  listener_name                 = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-httplstn" # remove
-  #request_routing_rule_name     = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-rqrt" # remove
-  gateway_ip_configuration_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gwipc"
-  # ssl_certificate_name          = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl"
-  # trusted_root_certificate_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl-trust-cert"
+  gateway_ip_configuration_name  = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gwipc"
 }
 
 #----------------------------------------------------------
