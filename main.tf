@@ -38,7 +38,7 @@ data "azurerm_storage_account" "storeacc" {
 }
 
 #-----------------------------------
-# Public IP for Load Balancer
+# Public IP for application gateway
 #-----------------------------------
 resource "azurerm_public_ip" "pip" {
   name                = lower("${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gw-pip")
