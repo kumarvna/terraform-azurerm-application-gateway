@@ -35,7 +35,7 @@ variable "storage_account_name" {
 
 variable "domain_name_label" {
   description = "Label for the Domain Name. Will be used to make up the FQDN."
-  default = null
+  default     = null
 }
 
 variable "enable_http2" {
@@ -130,17 +130,19 @@ variable "http_listeners" {
   }))
 }
 
-variable "request_routing_rule" {
-  description = "Request routing rules to be used for listeners."
-  type = object({
+variable "request_routing_rules" {
+  description = "List of Request routing rules to be used for listeners."
+  type = list(object({
+    name                        = string
     rule_type                   = string
+    http_listener_name          = string
+    backend_address_pool_name   = optional(string)
+    backend_http_settings_name  = optional(string)
     redirect_configuration_name = optional(string)
     rewrite_rule_set_name       = optional(string)
     url_path_map_name           = optional(string)
-  })
-  default = {
-    rule_type = "Basic"
-  }
+  }))
+  default = []
 }
 
 variable "identity_ids" {

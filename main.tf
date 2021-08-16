@@ -10,7 +10,7 @@ locals {
   http_probe_name    = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htpb"
   http_listener_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htln" # remove
   #  listener_name                 = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-httplstn" # remove
-  request_routing_rule_name     = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-rqrt"
+  request_routing_rule_name     = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-rqrt" # remove
   gateway_ip_configuration_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gwipc"
   ssl_certificate_name          = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl"
   trusted_root_certificate_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl-trust-cert"
@@ -178,16 +178,16 @@ resource "azurerm_application_gateway" "main" {
   # Request routing rules Configuration
   #----------------------------------------------------------
   dynamic "request_routing_rule" {
-    for_each = var.request_routing_rule != null ? [var.request_routing_rule] : []
+    for_each = var.request_routing_rules
     content {
-      name                        = lookup(var.request_routing_rule, "name", local.request_routing_rule_name)
-      rule_type                   = lookup(var.request_routing_rule, "rule_type", "Basic")
-      http_listener_name          = local.http_listener_name
-      backend_address_pool_name   = var.request_routing_rule.redirect_configuration_name == null ? local.backend_address_pool_name : null #local.backend_address_pool_name : null
-      backend_http_settings_name  = var.request_routing_rule.redirect_configuration_name == null ? local.backend_http_settings_name : null
-      redirect_configuration_name = lookup(var.request_routing_rule, "redirect_configuration_name", null)
-      rewrite_rule_set_name       = lookup(var.request_routing_rule, "rewrite_rule_set_name", null)
-      url_path_map_name           = lookup(var.request_routing_rule, "url_path_map_name", null)
+      name                        = request_routing_rule.value.name
+      rule_type                   = lookup(request_routing_rule.value, "rule_type", "Basic")
+      http_listener_name          = request_routing_rule.value.http_listener_name
+      backend_address_pool_name   = request_routing_rule.value.redirect_configuration_name == null ? request_routing_rule.value.backend_address_pool_name : null
+      backend_http_settings_name  = request_routing_rule.value.redirect_configuration_name == null ? request_routing_rule.value.backend_http_settings_name : null
+      redirect_configuration_name = lookup(request_routing_rule.value, "redirect_configuration_name", null)
+      rewrite_rule_set_name       = lookup(request_routing_rule.value, "rewrite_rule_set_name", null)
+      url_path_map_name           = lookup(request_routing_rule.value, "url_path_map_name", null)
     }
   }
 

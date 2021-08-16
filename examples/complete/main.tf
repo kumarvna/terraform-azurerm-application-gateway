@@ -57,13 +57,19 @@ module "app-gateway" {
     }
   ]
 
-  request_routing_rule = {
-    rule_type = "Basic"
-  }
+request_routing_rules = [
+  {
+    name                        = "appgw-testgateway-westeurope-be-rqrt"
+    rule_type                   = "Basic"
+    http_listener_name          = "appgw-testgateway-westeurope-be-htln01"
+    backend_address_pool_name   = "appgw-testgateway-westeurope-bapool01"
+    backend_http_settings_name  = "appgw-testgateway-westeurope-be-http-set1"
+}
+]
 
   http_listeners = [
     {
-      name                 = "appgw-testgateway-westeurope-be-htln"
+      name                 = "appgw-testgateway-westeurope-be-htln01"
       ssl_certificate_name = null
       host_name            = null
       custom_error_configuration = [
