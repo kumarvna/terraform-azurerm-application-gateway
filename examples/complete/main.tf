@@ -126,18 +126,6 @@ module "app-gateway" {
     password = "lats1234"
   }]
 
-  # Redirect traffic to one listener to another or external site. 
-  redirect_configuration = [
-    {
-      name = "demo-redirect-configuration01"
-    },
-    {
-      name                 = "demo-redirect-configuration02"
-      redirect_type        = "Temporary"
-      include_query_string = false
-    }
-  ]
-
   # Add custom error pages instead of displaying default error pages when a request can't reach the backend
   # Custom error pages can be defined at the global level and the listener level:
   # `Global level` - the error page applies to traffic for all the web applications deployed on that application gateway.
