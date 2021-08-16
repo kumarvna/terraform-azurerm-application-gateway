@@ -10,7 +10,7 @@ module "app-gateway" {
   resource_group_name  = "rg-shared-westeurope-01"
   location             = "westeurope"
   virtual_network_name = "vnet-shared-hub-westeurope-001"
-  subnet_name          = "snet-management"
+  subnet_name          = "snet-appgateway"
   app_gateway_name     = "testgateway"
   frontend_port        = 443
 
@@ -19,8 +19,8 @@ module "app-gateway" {
   storage_account_name     = "stdiaglogsdefaulthub"
 */
   sku = {
-    name     = "Standard_Small"
-    tier     = "Standard"
+    name     = "Standard_v2"
+    tier     = "Standard_v2"
     capacity = 1
   }
 
@@ -71,27 +71,16 @@ module "app-gateway" {
   http_listeners = [
     {
       name                 = "appgw-testgateway-westeurope-be-htln01"
-      ssl_certificate_name = null
+      ssl_certificate_name = "appgw-testgateway-westeurope-ssl01"
       host_name            = null
       custom_error_configuration = [
         {
-          custom_error_page_url = "https://example.com/custom_error_403_page.html"
+          custom_error_page_url = "https://stdiagfortesting.blob.core.windows.net/appgateway/custom_error_403_page.html"
           status_code           = "HttpStatus403"
         },
         {
-          custom_error_page_url = "https://example.com/custom_error_502_page.html"
+          custom_error_page_url = "https://stdiagfortesting.blob.core.windows.net/appgateway/custom_error_502_page.html"
           status_code           = "HttpStatus502"
-        }
-      ]
-    },
-    {
-      name                 = "appgw-testgateway-westeurope-be-htln02"
-      ssl_certificate_name = null
-      host_name            = null
-      custom_error_configuration = [
-        {
-          custom_error_page_url = "https://example.com/custom_error_403_page.html"
-          status_code           = "HttpStatus403"
         }
       ]
     }
@@ -135,15 +124,21 @@ module "app-gateway" {
 
   url_path_maps = [
     {
-      name = "testgateway-url-path"
+      name                               = "testgateway-url-path"
+      default_backend_address_pool_name  = "appgw-testgateway-westeurope-bapool01"
+      default_backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set1"
       path_rules = [
         {
-          name  = "api"
-          paths = ["/api/*"]
+          name                       = "api"
+          paths                      = ["/api/*"]
+          backend_address_pool_name  = "appgw-testgateway-westeurope-bapool01"
+          backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set1"
         },
         {
-          name  = "videos"
-          paths = ["/videos/*"]
+          name                       = "videos"
+          paths                      = ["/videos/*"]
+          backend_address_pool_name  = "appgw-testgateway-westeurope-bapool02"
+          backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set2"
         }
       ]
     }
@@ -151,13 +146,13 @@ module "app-gateway" {
 
   health_probes = [
     {
-      name                                = "appgw-testgateway-westeurope-probe1"
-      host                                = "127.0.0.1"
-      interval                            = 30
-      path                                = "/"
-      timeout                             = 30
-      unhealthy_threshold                 = 3
-      pick_host_name_from_backend_address = false
+      name                = "appgw-testgateway-westeurope-probe1"
+      host                = "127.0.0.1"
+      interval            = 30
+      path                = "/"
+      port                = 443
+      timeout             = 30
+      unhealthy_threshold = 3
     }
   ]
   # a list with a single user managed identity id to be assigned

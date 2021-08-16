@@ -283,8 +283,8 @@ resource "azurerm_application_gateway" "main" {
     for_each = var.url_path_maps[*]
     content {
       name                                = url_path_map.value.name
-      default_backend_http_settings_name  = url_path_map.value.default_redirect_configuration_name == null ? local.backend_address_pool_name : null
-      default_backend_address_pool_name   = url_path_map.value.default_redirect_configuration_name == null ? local.backend_http_settings_name : null
+      default_backend_address_pool_name   = url_path_map.value.default_redirect_configuration_name == null ? url_path_map.value.default_backend_address_pool_name : null
+      default_backend_http_settings_name  = url_path_map.value.default_redirect_configuration_name == null ? url_path_map.value.default_backend_http_settings_name : null
       default_redirect_configuration_name = lookup(url_path_map.value, "default_redirect_configuration_name", null)
       default_rewrite_rule_set_name       = lookup(url_path_map.value, "default_rewrite_rule_set_name", null)
 
@@ -292,8 +292,8 @@ resource "azurerm_application_gateway" "main" {
         for_each = url_path_map.value.path_rules[*]
         content {
           name                        = path_rule.value.name
-          backend_address_pool_name   = path_rule.value.redirect_configuration_name == null ? local.backend_address_pool_name : null
-          backend_http_settings_name  = path_rule.value.backend_http_settings_name == null ? local.backend_http_settings_name : null
+          backend_address_pool_name   = path_rule.value.backend_address_pool_name
+          backend_http_settings_name  = path_rule.value.backend_http_settings_name
           paths                       = path_rule.value.paths
           redirect_configuration_name = lookup(path_rule.value, "redirect_configuration_name", null)
           rewrite_rule_set_name       = lookup(path_rule.value, "rewrite_rule_set_name", null)

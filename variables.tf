@@ -214,7 +214,6 @@ variable "health_probes" {
 
 variable "url_path_maps" {
   description = "URL path maps associated to path-based rules."
-  default     = []
   type = list(object({
     name                                = string
     default_backend_http_settings_name  = optional(string)
@@ -231,6 +230,7 @@ variable "url_path_maps" {
       firewall_policy_id          = optional(string)
     }))
   }))
+  default = []
 }
 
 variable "redirect_configuration" {
