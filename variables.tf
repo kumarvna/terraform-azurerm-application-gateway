@@ -187,7 +187,7 @@ variable "ssl_certificates" {
 }
 
 variable "health_probes" {
-  description = "Health probes used to test backend health."
+  description = "List of Health probes used to test backend pools health."
   type = list(object({
     name                                      = string
     host                                      = string
@@ -207,7 +207,7 @@ variable "health_probes" {
 }
 
 variable "url_path_maps" {
-  description = "URL path maps associated to path-based rules."
+  description = "List of URL path maps associated to path-based rules."
   type = list(object({
     name                                = string
     default_backend_http_settings_name  = optional(string)

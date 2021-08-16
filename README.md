@@ -133,7 +133,7 @@ module "app-gateway" {
   ssl_certificates = [{
     name     = "appgw-testgateway-westeurope-ssl01"
     data     = "./keyBag.pfx"
-    password = "lats1234"
+    password = "P@$$w0rd123"
   }]
 
   # Add custom error pages instead of displaying default error pages when a request can't reach the backend
@@ -213,3 +213,114 @@ module "app-gateway" {
   }
 }
 ```
+
+## Recommended naming and tagging conventions
+
+Applying tags to your Azure resources, resource groups, and subscriptions to logically organize them into a taxonomy. Each tag consists of a name and a value pair. For example, you can apply the name `Environment` and the value `Production` to all the resources in production.
+For recommendations on how to implement a tagging strategy, see Resource naming and tagging decision guide.
+
+>**Important** :
+Tag names are case-insensitive for operations. A tag with a tag name, regardless of the casing, is updated or retrieved. However, the resource provider might keep the casing you provide for the tag name. You'll see that casing in cost reports. **Tag values are case-sensitive.**
+
+An effective naming convention assembles resource names by using important resource information as parts of a resource's name. For example, using these [recommended naming conventions](https://docs.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/naming-and-tagging#example-names), a public IP resource for a production SharePoint workload is named like this: `pip-sharepoint-prod-westus-001`.
+
+## Requirements
+
+| Name | Version |
+|------|---------|
+| terraform | >= 0.13 |
+| azurerm | >= 2.59.0 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| azurerm | >= 2.59.0 |
+
+## Inputs
+
+Name | Description | Type | Default
+---- | ----------- | ---- | -------
+`resource_group_name`|The name of an existing resource group.|string|`""`
+`location`|The location for all resources while creating a new resource group.|string|`""`
+`virtual_network_name`|The name of the virtual network|string|`""`
+`subnet_name`|The name of the subnet to use in VM scale set|string|`""`
+`app_gateway_name`|The name of the application gateway|string|`""`
+`log_analytics_workspace_name`|The name of log analytics workspace name|string|`null`
+`storage_account_name`|The name of the hub storage account to store logs|string|`null`
+domain_name_label|Label for the Domain Name. Will be used to make up the FQDN|string|`null`
+`enable_http2`|Is HTTP2 enabled on the application gateway resource?|string|`false`
+`zones`|A collection of availability zones to spread the Application Gateway over|list(string)|`[]`
+`firewall_policy_id`|The ID of the Web Application Firewall Policy which can be associated with app gateway|string|`null`
+`sku`|The sku pricing model of v1 and v2|object({})|`{}`
+`autoscale_configuration`|Minimum or Maximum capacity for autoscaling. Accepted values are for Minimum in the range `0` to `100` and for Maximum in the range `2` to `125`|object|`null`
+`private_ip_address`|Private IP Address to assign to the Load Balancer|string|`null`
+`backend_address_pools`|List of backend address pools|list(object{})|`[]`
+backend_http_settings|List of backend HTTP settings|list(object{})|`[]`
+`http_listeners`|List of HTTP/HTTPS listeners. SSL Certificate name is required|list(object{})|`[]`
+`request_routing_rules`|List of Request routing rules to be used for listeners|list(object{})|`[]`
+`identity_ids`|Specifies a list with a single user managed identity id to be assigned to the Application Gateway|list(string)|`null`
+`authentication_certificates`|Authentication certificates to allow the backend with Azure Application Gateway|list(object{})|`[]`
+`trusted_root_certificates`|Trusted root certificates to allow the backend with Azure Application Gateway|list(object{})|`[]`
+`ssl_policy`|Application Gateway SSL configuration|object({})|`null`
+`ssl_certificates`|List of SSL certificates data for Application gateway|list(object{})|`[]`
+`health_probes`|List of Health probes used to test backend pools health|list(object{})|`[]`
+`url_path_maps`|List of URL path maps associated to path-based rules|list(object{})|`[]`
+`redirect_configuration`|list of maps for redirect configurations|list(map(string))|`[]`
+`custom_error_configuration`|Global level custom error configuration for application gateway|list(map(string))|`[]`
+`rewrite_rule_set`|List of rewrite rule set including rewrite rules|any|`[]`
+`waf_configuration`|Web Application Firewall support for your Azure Application Gateway|object({})|`null`
+`Tags`|A map of tags to add to all resources|map|`{}`
+
+## Outputs
+
+Name | Description
+---- | -----------
+`application_gateway_id`|The ID of the Application Gateway
+`authentication_certificate_id`|The ID of the Authentication Certificate
+`backend_address_pool_id`|The ID of the Backend Address Pool
+`backend_http_settings_id`|The ID of the Backend HTTP Settings Configuration
+`backend_http_settings_probe_id`|The ID of the Backend HTTP Settings Configuration associated Probe
+`frontend_ip_configuration_id`|The ID of the Frontend IP Configuration
+`frontend_port_id`|The ID of the Frontend Port
+`gateway_ip_configuration_id`|The ID of the Gateway IP Configuration
+`http_listener_id`|The ID of the HTTP Listener
+`http_listener_frontend_ip_configuration_id`|The ID of the associated Frontend Configuration
+`http_listener_frontend_port_id`|The ID of the associated Frontend Port
+`http_listener_ssl_certificate_id`|The ID of the associated SSL Certificate
+`probe_id`|The ID of the health Probe
+`request_routing_rule_id`|The ID of the Request Routing Rule
+`request_routing_rule_http_listener_id`|The ID of the Request Routing Rule associated HTTP Listener
+`request_routing_rule_backend_address_pool_id`|The ID of the Request Routing Rule associated Backend Address Pool
+`request_routing_rule_backend_http_settings_id`|The ID of the Request Routing Rule associated Backend HTTP Settings Configuration
+`request_routing_rule_redirect_configuration_id`|The ID of the Request Routing Rule associated Redirect Configuration
+`request_routing_rule_rewrite_rule_set_id`|The ID of the Request Routing Rule associated Rewrite Rule Set
+`request_routing_rule_url_path_map_id`|The ID of the Request Routing Rule associated URL Path Map
+`ssl_certificate_id`|The ID of the SSL Certificate
+`ssl_certificate_public_cert_data`|The Public Certificate Data associated with the SSL Certificate
+`url_path_map_id`|The ID of the URL Path Map
+`url_path_map_default_backend_address_pool_id`|The ID of the Default Backend Address Pool associated with URL Path Map
+`url_path_map_default_backend_http_settings_id`|The ID of the Default Backend HTTP Settings Collection associated with URL Path Map
+`url_path_map_default_redirect_configuration_id`|The ID of the Default Redirect Configuration associated with URL Path Map
+`url_path_map_path_rule_id`|The ID of the Path Rule associated with URL Path Map
+`url_path_map_path_rule_backend_address_pool_id`|The ID of the Backend Address Pool used in this Path Rule
+`url_path_map_path_rule_backend_http_settings_id`|The ID of the Backend HTTP Settings Collection used in this Path Rule
+`url_path_map_path_rule_redirect_configuration_id`|The ID of the Redirect Configuration used in this Path Rule
+`url_path_map_path_rule_rewrite_rule_set_id`|The ID of the Rewrite Rule Set used in this Path Rule
+`custom_error_configuration_id`|The ID of the Custom Error Configuration
+`redirect_configuration_id`|The ID of the Redirect Configuration
+`rewrite_rule_set_id`|The ID of the Rewrite Rule Set
+
+## Resource Graph
+
+![](graph.png)
+
+## Authors
+
+Originally created by [Kumaraswamy Vithanala](mailto:kumarvna@gmail.com)
+
+## Other resources
+
+* [Azure Application Gateway documentation](https://docs.microsoft.com/en-us/azure/application-gateway/)
+
+* [Terraform AzureRM Provider Documentation](https://www.terraform.io/docs/providers/azurerm/index.html)

@@ -133,7 +133,7 @@ module "app-gateway" {
   ssl_certificates = [{
     name     = "appgw-testgateway-westeurope-ssl01"
     data     = "./keyBag.pfx"
-    password = "lats1234"
+    password = "P@$$w0rd123"
   }]
 
   # Add custom error pages instead of displaying default error pages when a request can't reach the backend

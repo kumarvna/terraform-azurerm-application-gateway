@@ -4,7 +4,7 @@ output "application_gateway_id" {
 }
 
 output "authentication_certificate_id" {
-  description = " The ID of the Authentication Certificate"
+  description = "The ID of the Authentication Certificate"
   value       = [for k in azurerm_application_gateway.main.authentication_certificate : k.id] #azurerm_application_gateway.main.authentication_certificate.*.id
 }
 

@@ -10,9 +10,8 @@ resource "azurerm_user_assigned_identity" "example" {
 }
 
 module "app-gateway" {
-  //  source = "kumarvna/app-gateway/azurerm"
-  // version = "1.0.0"
-  source = "../../"
+  source  = "kumarvna/app-gateway/azurerm"
+  version = "1.0.0"
 
   # Resource Group and location, VNet and Subnet detials (Required)
   resource_group_name  = "rg-shared-westeurope-01"
@@ -123,7 +122,7 @@ module "app-gateway" {
   ssl_certificates = [{
     name     = "appgw-testgateway-westeurope-ssl01"
     data     = "./keyBag.pfx"
-    password = "lats1234"
+    password = "P@$$w0rd123"
   }]
 
   # Add custom error pages instead of displaying default error pages when a request can't reach the backend
