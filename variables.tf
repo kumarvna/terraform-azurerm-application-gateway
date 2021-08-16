@@ -77,11 +77,11 @@ variable "private_ip_address" {
   default     = null
 }
 
-variable "frontend_port" {
+/* variable "frontend_port" {
   description = " The port used for this Frontend Port."
   default     = 80
 }
-
+ */
 variable "backend_address_pools" {
   description = "List of backend address pools"
   type = list(object({
@@ -251,19 +251,25 @@ variable "rewrite_rule_set" {
   default     = []
 }
 
-variable "waf_enabled" {
-  description = "Is the Web Application Firewall be enabled?"
-  default     = false
-}
-
-variable "nsg_diag_logs" {
-  description = "NSG Monitoring Category details for Azure Diagnostic setting"
-  default     = ["NetworkSecurityGroupEvent", "NetworkSecurityGroupRuleCounter"]
-}
-
-variable "pip_diag_logs" {
-  description = "Load balancer Public IP Monitoring Category details for Azure Diagnostic setting"
-  default     = ["DDoSProtectionNotifications", "DDoSMitigationFlowLogs", "DDoSMitigationReports"]
+variable "waf_configuration" {
+  description = "Web Application Firewall support for your Azure Application Gateway"
+  type = object({
+    firewall_mode            = string
+    rule_set_version         = string
+    file_upload_limit_mb     = optional(number)
+    request_body_check       = optional(bool)
+    max_request_body_size_kb = optional(number)
+    disabled_rule_group = object({
+      rule_group_name = string
+      rules           = list(string)
+    })
+    exclusion = object({
+      match_variable          = string
+      selector_match_operator = string
+      selector                = string
+    })
+  })
+  default = null
 }
 
 variable "tags" {

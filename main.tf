@@ -99,9 +99,13 @@ resource "azurerm_application_gateway" "main" {
   }
 
   frontend_port {
-    name = var.frontend_port == 80 ? "${local.frontend_port_name}-80" : "${local.frontend_port_name}-443"
-    port = var.frontend_port
+    name = "${local.frontend_port_name}-80"
+    port = 80
+  }
 
+  frontend_port {
+    name = "${local.frontend_port_name}-443"
+    port = 443
   }
 
   #----------------------------------------------------------
@@ -160,12 +164,12 @@ resource "azurerm_application_gateway" "main" {
     content {
       name                           = http_listener.value.name
       frontend_ip_configuration_name = local.frontend_ip_configuration_name
-      frontend_port_name             = var.frontend_port == 80 ? "${local.frontend_port_name}-80" : "${local.frontend_port_name}-443"
+      frontend_port_name             = http_listener.value.ssl_certificate_name == null ? "${local.frontend_port_name}-80" : "${local.frontend_port_name}-443"
       host_name                      = lookup(http_listener.value, "host_name", null)
       host_names                     = lookup(http_listener.value, "host_names", null)
-      protocol                       = var.frontend_port == 80 ? "Http" : "Https"
+      protocol                       = http_listener.value.ssl_certificate_name == null ? "Http" : "Https"
       require_sni                    = http_listener.value.ssl_certificate_name != null ? http_listener.value.require_sni : null
-      ssl_certificate_name           = var.frontend_port == 443 ? http_listener.value.ssl_certificate_name : null
+      ssl_certificate_name           = http_listener.value.ssl_certificate_name
       firewall_policy_id             = http_listener.value.firewall_policy_id
       dynamic "custom_error_configuration" {
         for_each = http_listener.value.custom_error_configuration[*]
@@ -382,5 +386,39 @@ resource "azurerm_application_gateway" "main" {
     }
   }
 
+  #----------------------------------------------------------
+  # Web application Firewall (WAF) configuration (Optional)
+  # Tier to be either “WAF” or “WAF V2”
+  #----------------------------------------------------------
+  dynamic "waf_configuration" {
+    for_each = var.waf_configuration != null ? [var.waf_configuration] : []
+    content {
+      enabled                  = true
+      firewall_mode            = lookup(waf_configuration.value, "firewall_mode", "Detection")
+      rule_set_type            = "OWASP"
+      rule_set_version         = lookup(waf_configuration.value, "rule_set_version", "3.1")
+      file_upload_limit_mb     = lookup(waf_configuration.value, "file_upload_limit_mb", 100)
+      request_body_check       = lookup(waf_configuration.value, "request_body_check", true)
+      max_request_body_size_kb = lookup(waf_configuration.value, max_request_body_size_kb, 128)
 
+      dynamic "disabled_rule_group" {
+        for_each = waf_configuration.value.disabled_rule_group
+        content {
+          rule_group_name = disabled_rule_group.value.rule_group_name
+          rules           = disabled_rule_group.value.rules
+        }
+      }
+
+      dynamic "exclusion" {
+        for_each = waf_configuration.value.exclusion
+        content {
+          match_variable          = exclusion.value.match_variable
+          selector_match_operator = exclusion.value.selector_match_operator
+          selector                = exclusion.value.selector
+        }
+      }
+    }
+  }
 }
+
+

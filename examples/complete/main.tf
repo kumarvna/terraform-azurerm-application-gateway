@@ -12,12 +12,11 @@ module "app-gateway" {
   virtual_network_name = "vnet-shared-hub-westeurope-001"
   subnet_name          = "snet-appgateway"
   app_gateway_name     = "testgateway"
-  frontend_port        = 443
 
-  /* # (Optional) To enable Azure Monitoring and install log analytics agents
-  log_analytics_workspace_name = "logaws-yhjhmxvd-default-hub-westeurope"
-  storage_account_name     = "stdiaglogsdefaulthub"
-*/
+ /*  # (Optional) To enable Azure Monitoring and install log analytics agents
+  log_analytics_workspace_name = "loganalytics-we-sharedtest2"
+  # storage_account_name         = "stdiagfortesting" */
+
   sku = {
     name     = "Standard_v2"
     tier     = "Standard_v2"
@@ -122,6 +121,7 @@ module "app-gateway" {
     }
   ] */
 
+  # Custom error page for status code '403', has a URL 'https://example.com/custom_error_403_page.html' for which the blob or container does not exist,
   url_path_maps = [
     {
       name                               = "testgateway-url-path"
@@ -156,7 +156,7 @@ module "app-gateway" {
     }
   ]
   # a list with a single user managed identity id to be assigned
-  /*   identity_ids = ["${azurerm_user_assigned_identity.example.id}"] */
+  identity_ids = ["${azurerm_user_assigned_identity.example.id}"]
 
   # Adding TAG's to your Azure resources (Required)
   # ProjectName and Env are already declared above, to use them here, create a varible. 
@@ -169,10 +169,8 @@ module "app-gateway" {
   }
 }
 
-/* 
 resource "azurerm_user_assigned_identity" "example" {
   resource_group_name = "rg-shared-westeurope-01"
   location            = "westeurope"
   name                = "appgw-api"
 }
- */
