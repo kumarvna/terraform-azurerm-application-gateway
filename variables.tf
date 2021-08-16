@@ -181,19 +181,21 @@ variable "ssl_policy" {
   default = null
 }
 
-variable "ssl_certificate" {
+variable "ssl_certificates" {
   description = "SSL certificate data for Application gateway"
-  type = object({
+  type = list(object({
+    name                = string
     data                = optional(string)
     password            = optional(string)
     key_vault_secret_id = optional(string)
-  })
-  default = null
+  }))
+  default = []
 }
 
-variable "health_probe" {
+variable "health_probes" {
   description = "Health probes used to test backend health."
-  type = object({
+  type = list(object({
+    name                                      = string
     host                                      = string
     interval                                  = number
     path                                      = string
@@ -206,8 +208,8 @@ variable "health_probe" {
       body        = optional(string)
       status_code = optional(list(string))
     }))
-  })
-  default = null
+  }))
+  default = []
 }
 
 variable "url_path_maps" {

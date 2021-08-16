@@ -12,8 +12,8 @@ locals {
   #  listener_name                 = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-httplstn" # remove
   #request_routing_rule_name     = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-rqrt" # remove
   gateway_ip_configuration_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gwipc"
-  ssl_certificate_name          = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl"
-  trusted_root_certificate_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl-trust-cert"
+  # ssl_certificate_name          = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl"
+  # trusted_root_certificate_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl-trust-cert"
 }
 
 #----------------------------------------------------------
@@ -248,12 +248,12 @@ resource "azurerm_application_gateway" "main" {
   # SSL Certificate (.pfx) Configuration (Optional)
   #----------------------------------------------------------
   dynamic "ssl_certificate" {
-    for_each = var.ssl_certificate != null ? [var.ssl_certificate] : []
+    for_each = var.ssl_certificates
     content {
-      name                = local.ssl_certificate_name
-      data                = var.ssl_certificate.key_vault_secret_id == null ? filebase64(lookup(var.ssl_certificate, "data")) : null
-      password            = var.ssl_certificate.key_vault_secret_id == null ? var.ssl_certificate.password : null
-      key_vault_secret_id = lookup(var.ssl_certificate, "key_vault_secret_id", null)
+      name                = ssl_certificate.value.name
+      data                = ssl_certificate.value.key_vault_secret_id == null ? filebase64(ssl_certificate.value.data) : null
+      password            = ssl_certificate.value.key_vault_secret_id == null ? ssl_certificate.value.password : null
+      key_vault_secret_id = lookup(ssl_certificate.value, "key_vault_secret_id", null)
     }
   }
 
@@ -261,18 +261,18 @@ resource "azurerm_application_gateway" "main" {
   # Health Probe (Optional)
   #----------------------------------------------------------
   dynamic "probe" {
-    for_each = var.health_probe != null ? [var.health_probe] : []
+    for_each = var.health_probes
     content {
-      name                                      = local.http_probe_name
-      host                                      = var.health_probe.pick_host_name_from_backend_address == false ? lookup(var.health_probe, "host", "127.0.0.1") : null
-      interval                                  = lookup(var.health_probe, "interval", 30)
-      protocol                                  = var.health_probe.port == 80 ? "Http" : "Https"
-      path                                      = lookup(var.health_probe, "path", "/")
-      timeout                                   = lookup(var.health_probe, "timeout", 30)
-      unhealthy_threshold                       = lookup(var.health_probe, "unhealthy_threshold", 3)
-      port                                      = lookup(var.health_probe, "port", 80)
-      pick_host_name_from_backend_http_settings = lookup(var.health_probe, "pick_host_name_from_backend_http_settings", false)
-      minimum_servers                           = lookup(var.health_probe, "minimum_servers", 0)
+      name                                      = probe.value.name
+      host                                      = lookup(probe.value, "host", "127.0.0.1")
+      interval                                  = lookup(probe.value, "interval", 30)
+      protocol                                  = probe.value.port == 443 ? "Https" : "Http"
+      path                                      = lookup(probe.value, "path", "/")
+      timeout                                   = lookup(probe.value, "timeout", 30)
+      unhealthy_threshold                       = lookup(probe.value, "unhealthy_threshold", 3)
+      port                                      = lookup(probe.value, "port", 443)
+      pick_host_name_from_backend_http_settings = lookup(probe.value, "pick_host_name_from_backend_http_settings", false)
+      minimum_servers                           = lookup(probe.value, "minimum_servers", 0)
     }
   }
 
