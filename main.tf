@@ -421,4 +421,73 @@ resource "azurerm_application_gateway" "main" {
   }
 }
 
+#---------------------------------------------------------------
+# azurerm monitoring diagnostics - PIP, and Application Gateway
+#---------------------------------------------------------------
+resource "azurerm_monitor_diagnostic_setting" "pip-diag" {
+  count                      = var.log_analytics_workspace_name != null || var.storage_account_name != null ? 1 : 0
+  name                       = lower("pip-${var.app_gateway_name}-diag")
+  target_resource_id         = azurerm_public_ip.pip.id
+  storage_account_id         = var.storage_account_name != null ? data.azurerm_storage_account.storeacc.0.id : null
+  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id
 
+  dynamic "log" {
+    for_each = var.pip_diag_logs
+    content {
+      category = log.value
+      enabled  = true
+
+      retention_policy {
+        enabled = false
+        days    = 0
+      }
+    }
+  }
+
+  metric {
+    category = "AllMetrics"
+
+    retention_policy {
+      enabled = false
+      days    = 0
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [log, metric]
+  }
+}
+
+resource "azurerm_monitor_diagnostic_setting" "agw-diag" {
+  count                      = var.log_analytics_workspace_name != null || var.storage_account_name != null ? 1 : 0
+  name                       = lower("agw-${var.app_gateway_name}-diag")
+  target_resource_id         = azurerm_application_gateway.main.id
+  storage_account_id         = var.storage_account_name != null ? data.azurerm_storage_account.storeacc.0.id : null
+  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id
+
+  dynamic "log" {
+    for_each = var.agw_diag_logs
+    content {
+      category = log.value
+      enabled  = true
+
+      retention_policy {
+        enabled = false
+        days    = 0
+      }
+    }
+  }
+
+  metric {
+    category = "AllMetrics"
+
+    retention_policy {
+      enabled = false
+      days    = 0
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [log, metric]
+  }
+}

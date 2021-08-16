@@ -272,6 +272,16 @@ variable "waf_configuration" {
   default = null
 }
 
+variable "agw_diag_logs" {
+  description = "Application Gateway Monitoring Category details for Azure Diagnostic setting"
+  default     = ["ApplicationGatewayAccessLog", "ApplicationGatewayPerformanceLog", "ApplicationGatewayFirewallLog"]
+}
+
+variable "pip_diag_logs" {
+  description = "Load balancer Public IP Monitoring Category details for Azure Diagnostic setting"
+  default     = ["DDoSProtectionNotifications", "DDoSMitigationFlowLogs", "DDoSMitigationReports"]
+}
+
 variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(string)

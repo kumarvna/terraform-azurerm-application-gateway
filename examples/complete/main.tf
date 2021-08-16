@@ -13,9 +13,9 @@ module "app-gateway" {
   subnet_name          = "snet-appgateway"
   app_gateway_name     = "testgateway"
 
- /*  # (Optional) To enable Azure Monitoring and install log analytics agents
+  # (Optional) To enable Azure Monitoring and install log analytics agents
   log_analytics_workspace_name = "loganalytics-we-sharedtest2"
-  # storage_account_name         = "stdiagfortesting" */
+  # storage_account_name         = "stdiagfortesting"
 
   sku = {
     name     = "Standard_v2"
