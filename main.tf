@@ -10,7 +10,7 @@ locals {
   http_probe_name    = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htpb"
   http_listener_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-be-htln" # remove
   #  listener_name                 = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-httplstn" # remove
-  request_routing_rule_name     = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-rqrt" # remove
+  #request_routing_rule_name     = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-rqrt" # remove
   gateway_ip_configuration_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gwipc"
   ssl_certificate_name          = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl"
   trusted_root_certificate_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-ssl-trust-cert"
@@ -59,6 +59,9 @@ resource "azurerm_public_ip" "pip" {
   tags                = merge({ "ResourceName" = lower("${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gw-pip") }, var.tags, )
 }
 
+#----------------------------------------------
+# Application Gateway with all optional blocks
+#----------------------------------------------
 resource "azurerm_application_gateway" "main" {
   name                = lower("appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}")
   resource_group_name = data.azurerm_resource_group.rg.name
@@ -102,7 +105,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #----------------------------------------------------------
-  # Backend Address Pool Configuration
+  # Backend Address Pool Configuration (Required)
   #----------------------------------------------------------
   dynamic "backend_address_pool" {
     for_each = var.backend_address_pools
@@ -114,7 +117,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #----------------------------------------------------------
-  # Backend HTTP Settings
+  # Backend HTTP Settings (Required)
   #----------------------------------------------------------
   dynamic "backend_http_settings" {
     for_each = var.backend_http_settings
@@ -150,7 +153,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #----------------------------------------------------------
-  # HTTP Listener Configuration
+  # HTTP Listener Configuration (Required)
   #----------------------------------------------------------
   dynamic "http_listener" {
     for_each = var.http_listeners
@@ -175,7 +178,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #----------------------------------------------------------
-  # Request routing rules Configuration
+  # Request routing rules Configuration (Required)
   #----------------------------------------------------------
   dynamic "request_routing_rule" {
     for_each = var.request_routing_rules
@@ -192,7 +195,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #---------------------------------------------------------------
-  # Identity block Configuration
+  # Identity block Configuration (Optional)
   # A list with a single user managed identity id to be assigned
   #---------------------------------------------------------------
   dynamic "identity" {
@@ -204,29 +207,29 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #----------------------------------------------------------
-  # Authentication SSL Certificate Configuration
+  # Authentication SSL Certificate Configuration (Optional)
   #----------------------------------------------------------
   dynamic "authentication_certificate" {
-    for_each = var.authentication_certificate != null ? [var.authentication_certificate] : []
+    for_each = var.authentication_certificates
     content {
-      name = var.authentication_certificate.name
-      data = filebase64(lookup(var.authentication_certificate, "data"))
+      name = authentication_certificate.value.name
+      data = filebase64(authentication_certificate.value.data)
     }
   }
 
   #----------------------------------------------------------
-  # Trusted Root SSL Certificate Configuration
+  # Trusted Root SSL Certificate Configuration (Optional)
   #----------------------------------------------------------
   dynamic "trusted_root_certificate" {
-    for_each = var.trusted_root_certificate != null ? [var.trusted_root_certificate] : []
+    for_each = var.trusted_root_certificates
     content {
-      name = var.trusted_root_certificate.name
-      data = filebase64(lookup(var.trusted_root_certificate, "data"))
+      name = trusted_root_certificate.value.name
+      data = filebase64(trusted_root_certificate.value.data)
     }
   }
 
   #----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  # SSL Policy for Application Gateway
+  # SSL Policy for Application Gateway (Optional)
   # Application Gateway has three predefined security policies to get the appropriate level of security
   # AppGwSslPolicy20150501 - MinProtocolVersion(TLSv1_0), AppGwSslPolicy20170401 - MinProtocolVersion(TLSv1_1), AppGwSslPolicy20170401S - MinProtocolVersion(TLSv1_2)
   #----------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -242,7 +245,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #----------------------------------------------------------
-  # SSL Certificate (.pfx) Configuration
+  # SSL Certificate (.pfx) Configuration (Optional)
   #----------------------------------------------------------
   dynamic "ssl_certificate" {
     for_each = var.ssl_certificate != null ? [var.ssl_certificate] : []
@@ -255,7 +258,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #----------------------------------------------------------
-  # Health Probe
+  # Health Probe (Optional)
   #----------------------------------------------------------
   dynamic "probe" {
     for_each = var.health_probe != null ? [var.health_probe] : []
@@ -274,7 +277,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #----------------------------------------------------------
-  # URL Path Mappings
+  # URL Path Mappings (Optional)
   #----------------------------------------------------------
   dynamic "url_path_map" {
     for_each = var.url_path_maps[*]
@@ -301,7 +304,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #----------------------------------------------------------
-  # Redirect Configuration
+  # Redirect Configuration (Optional)
   #----------------------------------------------------------
   dynamic "redirect_configuration" {
     for_each = var.redirect_configuration[*]
@@ -316,7 +319,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #----------------------------------------------------------
-  # Custom error configuration
+  # Custom error configuration (Optional)
   #----------------------------------------------------------
   dynamic "custom_error_configuration" {
     for_each = var.custom_error_configuration[*]
@@ -327,7 +330,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   #----------------------------------------------------------
-  # Rewrite Rules Set configuration
+  # Rewrite Rules Set configuration (Optional)
   #----------------------------------------------------------
   dynamic "rewrite_rule_set" {
     for_each = var.rewrite_rule_set[*]

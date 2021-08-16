@@ -151,22 +151,22 @@ variable "identity_ids" {
   default = null
 }
 
-variable "authentication_certificate" {
+variable "authentication_certificates" {
   description = "Authentication certificates to allow the backend with Azure Application Gateway"
-  type = object({
+  type = list(object({
     name = string
     data = string
-  })
-  default = null
+  }))
+  default = []
 }
 
-variable "trusted_root_certificate" {
+variable "trusted_root_certificates" {
   description = "Trusted root certificates to allow the backend with Azure Application Gateway"
-  type = object({
+  type = list(object({
     name = string
     data = string
-  })
-  default = null
+  }))
+  default = []
 }
 
 variable "ssl_policy" {
