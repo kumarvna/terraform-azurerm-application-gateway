@@ -20,8 +20,8 @@ resource "azurerm_user_assigned_identity" "example" {
   name                = "appgw-api"
 }
 
-module "app-gateway" {
-  source = "kumarvna/app-gateway/azurerm"
+module "application-gateway" {
+  source  = "kumarvna/application-gateway/azurerm"
   version = "1.0.0"
 
   # Resource Group and location, VNet and Subnet detials (Required)
