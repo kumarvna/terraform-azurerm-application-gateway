@@ -22,9 +22,11 @@ resource "azurerm_user_assigned_identity" "example" {
 
 module "application-gateway" {
   source  = "kumarvna/application-gateway/azurerm"
-  version = "1.0.0"
+  version = "1.1.0"
 
-  # Resource Group and location, VNet and Subnet detials (Required)
+  # By default, this module will not create a resource group and expect to provide 
+  # a existing RG name to use an existing resource group. Location will be same as existing RG. 
+  # set the argument to `create_resource_group = true` to create new resrouce.
   resource_group_name  = "rg-shared-westeurope-01"
   location             = "westeurope"
   virtual_network_name = "vnet-shared-hub-westeurope-001"

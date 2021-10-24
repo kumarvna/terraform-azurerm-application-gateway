@@ -13,7 +13,9 @@ module "application-gateway" {
   source  = "kumarvna/application-gateway/azurerm"
   version = "1.1.0"
 
-  # Resource Group and location, VNet and Subnet detials (Required)
+  # By default, this module will not create a resource group and expect to provide 
+  # a existing RG name to use an existing resource group. Location will be same as existing RG. 
+  # set the argument to `create_resource_group = true` to create new resrouce.
   resource_group_name  = "rg-shared-westeurope-01"
   location             = "westeurope"
   virtual_network_name = "vnet-shared-hub-westeurope-001"
@@ -108,9 +110,8 @@ module "application-gateway" {
   ssl_certificates = [{
     name     = "appgw-testgateway-westeurope-ssl01"
     data     = "./keyBag.pfx"
-    password = "lats1234" #"P@$$w0rd123"
+    password = "P@$$w0rd123"
   }]
-
 
   # WAF configuration, disabled rule groups and exclusions.depends_on
   # The Application Gateway WAF comes pre-configured with CRS 3.0 by default. But you can choose to use CRS 3.2, 3.1, or 2.2.9 instead.

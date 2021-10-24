@@ -22,9 +22,11 @@ resource "azurerm_user_assigned_identity" "example" {
 
 module "application-gateway" {
   source  = "kumarvna/application-gateway/azurerm"
-  version = "1.0.0"
+  version = "1.1.0"
 
-  # Resource Group and location, VNet and Subnet detials (Required)
+  # By default, this module will not create a resource group and expect to provide 
+  # a existing RG name to use an existing resource group. Location will be same as existing RG. 
+  # set the argument to `create_resource_group = true` to create new resrouce.
   resource_group_name  = "rg-shared-westeurope-01"
   location             = "westeurope"
   virtual_network_name = "vnet-shared-hub-westeurope-001"
@@ -157,7 +159,7 @@ module "application-gateway" {
 }
 ```
 
-## sku - what is the correct sku v1 or V2?
+## sku - Which one is the correct sku v1 or V2?
 
 Application Gateway is available under a Standard_v2 SKU. Web Application Firewall (WAF) is available under a WAF_v2 SKU. The v2 SKU offers performance enhancements and adds support for critical new features like autoscaling, zone redundancy, and support for static VIPs.
 
@@ -334,6 +336,23 @@ A ssl_certificates block supports the following:
 `password`|Password for the pfx file specified in data. Required if `data` is set.
 `key_vault_secret_id`|Secret Id of (base-64 encoded unencrypted pfx) Secret or Certificate object stored in Azure `KeyVault`. You need to enable `soft delete` for keyvault to use this feature. Required if `data` is not set.
 
+```hcl
+module "application-gateway" {
+  source  = "kumarvna/application-gateway/azurerm"
+  version = "1.1.0"
+
+  # .... omitted
+
+  ssl_certificates = [{
+    name     = "appgw-testgateway-westeurope-ssl01"
+    data     = "./keyBag.pfx"
+    password = "P@$$w0rd123"
+  }]
+
+  # .... omitted
+}
+```
+
 ### `custom_error_configuration` - Create Application Gateway custom error pages
 
 Application Gateway allows you to create custom error pages instead of displaying default error pages. You can use your own branding and layout using a custom error page.
@@ -364,7 +383,7 @@ module "application-gateway" {
       ssl_certificate_name = "appgw-testgateway-westeurope-ssl01"
       host_name            = null
 
-      /*       custom_error_configuration = [
+      custom_error_configuration = [
         {
           custom_error_page_url = "https://example.blob.core.windows.net/appgateway/custom_error_403_page.html"
           status_code           = "HttpStatus403"
@@ -373,7 +392,7 @@ module "application-gateway" {
           custom_error_page_url = "https://example.blob.core.windows.net/appgateway/custom_error_502_page.html"
           status_code           = "HttpStatus502"
         }
-      ] */
+      ]
     }
   ]
 
@@ -568,14 +587,16 @@ An effective naming convention assembles resource names by using important resou
 
 Name | Description | Type | Default
 ---- | ----------- | ---- | -------
+`create_resource_group` | Whether to create resource group and use it for all networking resources | string | `"false"`
 `resource_group_name`|The name of an existing resource group.|string|`""`
 `location`|The location for all resources while creating a new resource group.|string|`""`
 `virtual_network_name`|The name of the virtual network|string|`""`
+`vnet_resource_group_name`|The resource group name where the virtual network is created|string|`""`
 `subnet_name`|The name of the subnet to use in VM scale set|string|`""`
 `app_gateway_name`|The name of the application gateway|string|`""`
 `log_analytics_workspace_name`|The name of log analytics workspace name|string|`null`
 `storage_account_name`|The name of the hub storage account to store logs|string|`null`
-domain_name_label|Label for the Domain Name. Will be used to make up the FQDN|string|`null`
+`domain_name_label`|Label for the Domain Name. Will be used to make up the FQDN|string|`null`
 `enable_http2`|Is HTTP2 enabled on the application gateway resource?|string|`false`
 `zones`|A collection of availability zones to spread the Application Gateway over|list(string)|`[]`
 `firewall_policy_id`|The ID of the Web Application Firewall Policy which can be associated with app gateway|string|`null`
@@ -583,7 +604,7 @@ domain_name_label|Label for the Domain Name. Will be used to make up the FQDN|st
 `autoscale_configuration`|Minimum or Maximum capacity for autoscaling. Accepted values are for Minimum in the range `0` to `100` and for Maximum in the range `2` to `125`|object|`null`
 `private_ip_address`|Private IP Address to assign to the Load Balancer|string|`null`
 `backend_address_pools`|List of backend address pools|list(object{})|`[]`
-backend_http_settings|List of backend HTTP settings|list(object{})|`[]`
+`backend_http_settings`|List of backend HTTP settings|list(object{})|`[]`
 `http_listeners`|List of HTTP/HTTPS listeners. SSL Certificate name is required|list(object{})|`[]`
 `request_routing_rules`|List of Request routing rules to be used for listeners|list(object{})|`[]`
 `identity_ids`|Specifies a list with a single user managed identity id to be assigned to the Application Gateway|list(string)|`null`
@@ -629,11 +650,6 @@ Name | Description
 `url_path_map_default_backend_address_pool_id`|The ID of the Default Backend Address Pool associated with URL Path Map
 `url_path_map_default_backend_http_settings_id`|The ID of the Default Backend HTTP Settings Collection associated with URL Path Map
 `url_path_map_default_redirect_configuration_id`|The ID of the Default Redirect Configuration associated with URL Path Map
-`url_path_map_path_rule_id`|The ID of the Path Rule associated with URL Path Map
-`url_path_map_path_rule_backend_address_pool_id`|The ID of the Backend Address Pool used in this Path Rule
-`url_path_map_path_rule_backend_http_settings_id`|The ID of the Backend HTTP Settings Collection used in this Path Rule
-`url_path_map_path_rule_redirect_configuration_id`|The ID of the Redirect Configuration used in this Path Rule
-`url_path_map_path_rule_rewrite_rule_set_id`|The ID of the Rewrite Rule Set used in this Path Rule
 `custom_error_configuration_id`|The ID of the Custom Error Configuration
 `redirect_configuration_id`|The ID of the Redirect Configuration
 `rewrite_rule_set_id`|The ID of the Rewrite Rule Set
