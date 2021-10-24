@@ -6,7 +6,7 @@ Classic load balances operate at OSI layer 4 - TCP and UDP, while Application Ga
 
 This terraform module quickly creates a desired application gateway with additional options like WAF, Custom Error Configuration, SSL offloading with SSL policies, URL path mapping and many other options.
 
-## Module Usage for simple http applicaton gateway
+## Module Usage to create a simple http applicaton gateway
 
 ```hcl
 # Azurerm Provider configuration
