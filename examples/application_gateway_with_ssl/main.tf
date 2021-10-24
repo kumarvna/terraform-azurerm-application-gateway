@@ -11,7 +11,7 @@ resource "azurerm_user_assigned_identity" "example" {
 
 module "application-gateway" {
   source  = "kumarvna/application-gateway/azurerm"
-  version = "1.1.0"
+  version = "1.0.0"
 
   # Resource Group and location, VNet and Subnet detials (Required)
   resource_group_name  = "rg-shared-westeurope-01"
@@ -44,6 +44,7 @@ module "application-gateway" {
   # An application gateway routes traffic to the backend servers using the port, protocol, and other settings
   # The port and protocol used to check traffic is encrypted between the application gateway and backend servers
   # List of backend HTTP settings can be added here.  
+  # `probe_name` argument is required if you are defing health probes.
   backend_http_settings = [
     {
       name                  = "appgw-testgateway-westeurope-be-http-set1"
@@ -51,8 +52,7 @@ module "application-gateway" {
       path                  = "/"
       enable_https          = true
       request_timeout       = 30
-      # `probe_name` argument is required if you are defing health probes.  
-      #   probe_name            = "appgw-testgateway-westeurope-probe1"
+      probe_name            = "appgw-testgateway-westeurope-probe1" # Remove this if `health_probes` object is not defined.
       connection_draining = {
         enable_connection_draining = true
         drain_timeout_sec          = 300
@@ -104,8 +104,25 @@ module "application-gateway" {
   ssl_certificates = [{
     name     = "appgw-testgateway-westeurope-ssl01"
     data     = "./keyBag.pfx"
-    password = "lats1234" #"P@$$w0rd123"
+    password = "P@$$w0rd123"
   }]
+
+  # By default, an application gateway monitors the health of all resources in its backend pool and automatically removes unhealthy ones. 
+  # It then monitors unhealthy instances and adds them back to the healthy backend pool when they become available and respond to health probes.
+  # must allow incoming Internet traffic on TCP ports 65503-65534 for the Application Gateway v1 SKU, and TCP ports 65200-65535 
+  # for the v2 SKU with the destination subnet as Any and source as GatewayManager service tag. This port range is required for Azure infrastructure communication.
+  # Additionally, outbound Internet connectivity can't be blocked, and inbound traffic coming from the AzureLoadBalancer tag must be allowed.
+  health_probes = [
+    {
+      name                = "appgw-testgateway-westeurope-probe1"
+      host                = "127.0.0.1"
+      interval            = 30
+      path                = "/"
+      port                = 443
+      timeout             = 30
+      unhealthy_threshold = 3
+    }
+  ]
 
   # A list with a single user managed identity id to be assigned to access Keyvault
   identity_ids = ["${azurerm_user_assigned_identity.example.id}"]
