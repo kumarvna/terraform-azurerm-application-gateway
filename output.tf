@@ -110,47 +110,22 @@ output "ssl_certificate_public_cert_data" {
 
 output "url_path_map_id" {
   description = "The ID of the URL Path Map"
-  value       = azurerm_application_gateway.main.url_path_map.*.id
+  value       = [for k in azurerm_application_gateway.main.url_path_map : k.id]
 }
 
 output "url_path_map_default_backend_address_pool_id" {
   description = "The ID of the Default Backend Address Pool associated with URL Path Map"
-  value       = azurerm_application_gateway.main.url_path_map.*.default_backend_address_pool_id
+  value       = [for k in azurerm_application_gateway.main.url_path_map : k.default_backend_address_pool_id]
 }
 
 output "url_path_map_default_backend_http_settings_id" {
   description = "The ID of the Default Backend HTTP Settings Collection associated with URL Path Map"
-  value       = azurerm_application_gateway.main.url_path_map.*.default_backend_http_settings_id
+  value       = [for k in azurerm_application_gateway.main.url_path_map : k.default_backend_http_settings_id]
 }
 
 output "url_path_map_default_redirect_configuration_id" {
   description = "The ID of the Default Redirect Configuration associated with URL Path Map"
-  value       = azurerm_application_gateway.main.url_path_map.*.default_redirect_configuration_id
-}
-
-output "url_path_map_path_rule_id" {
-  description = "The ID of the Path Rule associated with URL Path Map"
-  value       = azurerm_application_gateway.main.url_path_map.0.path_rule.*.id
-}
-
-output "url_path_map_path_rule_backend_address_pool_id" {
-  description = "The ID of the Backend Address Pool used in this Path Rule"
-  value       = azurerm_application_gateway.main.url_path_map.0.path_rule.*.backend_address_pool_id
-}
-
-output "url_path_map_path_rule_backend_http_settings_id" {
-  description = "The ID of the Backend HTTP Settings Collection used in this Path Rule"
-  value       = azurerm_application_gateway.main.url_path_map.0.path_rule.*.backend_http_settings_id
-}
-
-output "url_path_map_path_rule_redirect_configuration_id" {
-  description = "The ID of the Redirect Configuration used in this Path Rule"
-  value       = azurerm_application_gateway.main.url_path_map.0.path_rule.*.redirect_configuration_id
-}
-
-output "url_path_map_path_rule_rewrite_rule_set_id" {
-  description = "The ID of the Rewrite Rule Set used in this Path Rule"
-  value       = azurerm_application_gateway.main.url_path_map.0.path_rule.*.rewrite_rule_set_id
+  value       = [for k in azurerm_application_gateway.main.url_path_map : k.default_redirect_configuration_id]
 }
 
 output "custom_error_configuration_id" {

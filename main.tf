@@ -162,11 +162,12 @@ resource "azurerm_application_gateway" "main" {
       require_sni                    = http_listener.value.ssl_certificate_name != null ? http_listener.value.require_sni : null
       ssl_certificate_name           = http_listener.value.ssl_certificate_name
       firewall_policy_id             = http_listener.value.firewall_policy_id
+
       dynamic "custom_error_configuration" {
-        for_each = http_listener.value.custom_error_configuration[*]
+        for_each = http_listener.value.custom_error_configuration != null ? lookup(http_listener.value, "custom_error_configuration", {}) : []
         content {
-          status_code           = custom_error_configuration.value.status_code
-          custom_error_page_url = custom_error_configuration.value.custom_error_page_url
+          custom_error_page_url = lookup(custom_error_configuration.value, "custom_error_page_url", null)
+          status_code           = lookup(custom_error_configuration.value, "status_code", null)
         }
       }
     }
@@ -275,7 +276,7 @@ resource "azurerm_application_gateway" "main" {
   # URL Path Mappings (Optional)
   #----------------------------------------------------------
   dynamic "url_path_map" {
-    for_each = var.url_path_maps[*]
+    for_each = var.url_path_maps
     content {
       name                                = url_path_map.value.name
       default_backend_address_pool_name   = url_path_map.value.default_redirect_configuration_name == null ? url_path_map.value.default_backend_address_pool_name : null
@@ -284,12 +285,12 @@ resource "azurerm_application_gateway" "main" {
       default_rewrite_rule_set_name       = lookup(url_path_map.value, "default_rewrite_rule_set_name", null)
 
       dynamic "path_rule" {
-        for_each = url_path_map.value.path_rules[*]
+        for_each = lookup(url_path_map.value, "path_rules")
         content {
           name                        = path_rule.value.name
           backend_address_pool_name   = path_rule.value.backend_address_pool_name
           backend_http_settings_name  = path_rule.value.backend_http_settings_name
-          paths                       = path_rule.value.paths
+          paths                       = flatten(path_rule.value.paths)
           redirect_configuration_name = lookup(path_rule.value, "redirect_configuration_name", null)
           rewrite_rule_set_name       = lookup(path_rule.value, "rewrite_rule_set_name", null)
           firewall_policy_id          = lookup(path_rule.value, "firewall_policy_id", null)
@@ -317,7 +318,7 @@ resource "azurerm_application_gateway" "main" {
   # Custom error configuration (Optional)
   #----------------------------------------------------------
   dynamic "custom_error_configuration" {
-    for_each = var.custom_error_configuration[*]
+    for_each = var.custom_error_configuration
     content {
       custom_error_page_url = lookup(custom_error_configuration.value, "custom_error_page_url", null)
       status_code           = lookup(custom_error_configuration.value, "status_code", null)
@@ -328,7 +329,7 @@ resource "azurerm_application_gateway" "main" {
   # Rewrite Rules Set configuration (Optional)
   #----------------------------------------------------------
   dynamic "rewrite_rule_set" {
-    for_each = var.rewrite_rule_set[*]
+    for_each = var.rewrite_rule_set
     content {
       name = var.rewrite_rule_set.name
 
@@ -409,6 +410,12 @@ resource "azurerm_application_gateway" "main" {
         }
       }
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      tags,
+    ]
   }
 }
 
