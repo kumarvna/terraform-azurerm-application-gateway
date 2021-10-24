@@ -34,9 +34,13 @@ module "application-gateway" {
   # SKU requires `name`, `tier` to use for this Application Gateway
   # `Capacity` property is optional if `autoscale_configuration` is set
   sku = {
-    name     = "Standard_v2"
-    tier     = "Standard_v2"
-    capacity = 1
+    name = "Standard_v2"
+    tier = "Standard_v2"
+  }
+
+  autoscale_configuration = {
+    min_capacity = 1
+    max_capacity = 15
   }
 
   # A backend pool routes request to backend servers, which serve the request.
@@ -153,6 +157,138 @@ module "application-gateway" {
 }
 ```
 
+## sku - what is the correct sku v1 or V2?
+
+Application Gateway is available under a Standard_v2 SKU. Web Application Firewall (WAF) is available under a WAF_v2 SKU. The v2 SKU offers performance enhancements and adds support for critical new features like autoscaling, zone redundancy, and support for static VIPs.
+
+Application Gateway Standard_v2 supports autoscaling and can scale up or down based on changing traffic load patterns. Autoscaling also removes the requirement to choose a deployment size or instance count during provisioning.
+
+`sku` object supports the following:
+
+| Name | Description
+|--|--
+`name`|The Name of the `SKU` to use for this Application Gateway. Possible values are `Standard_Small`, `Standard_Medium`, `Standard_Large`, `Standard_v2`, `WAF_Medium`, `WAF_Large`, and `WAF_v2`.
+tier|The `Tier` of the `SKU` to use for this Application Gateway. Possible values are `Standard`, `Standard_v2`, WAF and `WAF_v2`.
+`capacity`|The Capacity of the `SKU` to use for this Application Gateway. When using a `V1` SKU this value must be between `1` and `32`, and `1` to `125` for a `V2` SKU. This property is optional if `autoscale_configuration` is set.
+
+A `autoscale_configuration` block supports the following:
+
+| Name | Description
+|--|--
+`min_capacity`|Minimum capacity for autoscaling. Accepted values are in the range `0` to `100`.
+`max_capacity`|Maximum capacity for autoscaling. Accepted values are in the range `2` to `125`.
+
+### FEATURE COMPARISON BETWEEN V1 SKU AND V2 SKU
+
+Feature|v1 SKU|v2 SKU
+-------|------|------
+Autoscaling| |✓|
+Zone redundancy| |✓
+Static VIP| |✓
+Azure Kubernetes Service (AKS) Ingress controller| |✓
+Azure Key Vault integration| |✓
+Rewrite HTTP(S) headers| |✓
+URL-based routing|✓|✓
+Multiple-site hosting|✓|✓
+Traffic redirection|✓|✓
+Web Application Firewall (WAF)|✓|✓
+WAF custom rules| |✓
+Transport Layer Security (TLS)/Secure Sockets Layer (SSL) termination|✓|✓
+End-to-end TLS encryption|✓|✓
+Session affinity|✓|✓
+Custom error pages|✓|✓
+WebSocket support|✓|✓
+HTTP/2 support|✓|✓
+Connection draining|✓|✓
+
+## `backend_address_pools` -  route request to backend servers
+
+The backend pool is used to route requests to the backend servers that serve the request. Backend pools can be composed of NICs, virtual machine scale sets, public IP addresses, internal IP addresses, fully qualified domain names (FQDN), and multi-tenant back-ends like Azure App Service
+
+`backend_address_pools` object supports the following:
+
+| Name | Description
+|--|--
+`name`|The name of the Backend Address Pool.
+`fqdns`|A list of FQDN's which should be part of the Backend Address Pool.
+`ip_addresses`|A list of IP Addresses which should be part of the Backend Address Pool.
+
+## `backend_http_settings` - Application Gateway HTTP settings configuration
+
+The application gateway routes traffic to the back-end servers by using the configuration that you specify here. After you create an HTTP setting, you must associate it with one or more request-routing rules.
+
+`backend_http_settings` object supports the following:
+
+| Name | Description
+|--|--
+`name`|The name of the Backend HTTP Settings Collection.
+`cookie_based_affinity`|Is Cookie-Based Affinity enabled? Possible values are `Enabled` and `Disabled`.
+`affinity_cookie_name`|The name of the affinity cookie.
+`path`|The Path which should be used as a prefix for all HTTP requests.
+`enable_https`|enbale SSL port and https protocol. Possible values are `true` and `false`
+`probe_name`|The name of an associated HTTP Probe. Required when health_probes object specified.
+`request_timeout`|The request timeout in seconds, which must be between 1 and 86400 seconds.
+`host_name`|Host header to be sent to the backend servers. Cannot be set if `pick_host_name_from_backend_address` is set to true.
+`pick_host_name_from_backend_address`|Whether host header should be picked from the host name of the backend server. Defaults to `false`.
+`authentication_certificate`|One or more authentication_certificate blocks available by specifing `authentication_certificate` object.
+`trusted_root_certificate_names`|A list of trusted_root_certificate names.
+`connection_draining`|A `connection_draining` object to specified with `enable_connection_draining` and `drain_timeout_sec` arguments.
+
+## `http_listeners` - logical entity that checks for incoming connection requests
+
+A listener is a logical entity that checks for incoming connection requests. A listener accepts a request if the protocol, port, hostname, and IP address associated with the request match the same elements associated with the listener configuration.
+
+Before you use an application gateway, you must add at least one listener. There can be multiple listeners attached to an application gateway, and they can be used for the same protocol.
+
+After a listener detects incoming requests from clients, the application gateway routes these requests to members in the backend pool configured in the rule.
+
+There are two types of listeners:
+
+* **Basic** - This type of listener listens to a single domain site, where it has a single DNS mapping to the IP address of the application gateway. This listener configuration is required when you host a single site behind an application gateway.
+* **Multi-site** - This listener configuration is required when you want to configure routing based on host name or domain name for more than one web application on the same application gateway. Each website can be directed to its own backend pool.
+
+A `http_listeners` block supports the following:
+
+| Name | Description
+|--|--
+`name`|The Name of the HTTP Listener.
+`host_name`|The Hostname which should be used for this HTTP Listener. Setting this value changes Listener Type to `Multi site`.
+`host_names`|A list of Hostname(s) should be used for this HTTP Listener. It allows special wildcard characters. The `host_names` and `host_name` are mutually exclusive and cannot both be set.
+`require_sni`|Should Server Name Indication be Required? Defaults to `false`.
+`ssl_certificate_name`|The name of the associated SSL Certificate which should be used for this HTTP Listener.
+`custom_error_configuration`|One or more `custom_error_configuration` blocks as defined below.
+`firewall_policy_id`|The ID of the Web Application Firewall Policy which should be used for this HTTP Listener.
+`ssl_profile_name`| The name of the associated SSL Profile (`ssl_profile` as defined below) which should be used for this HTTP Listener.
+
+## request_routing_rules - how to route traffic on the listener?
+
+A request routing rule is a key component of an application gateway because it determines how to route traffic on the listener. The rule binds the listener, the back-end server pool, and the backend HTTP settings.
+
+When a listener accepts a request, the request routing rule forwards the request to the backend or redirects it elsewhere. If the request is forwarded to the backend, the request routing rule defines which backend server pool to forward it to. The request routing rule also determines if the headers in the request are to be rewritten. One listener can be attached to one rule.
+
+There are two types of request routing rules:
+
+* **Basic**: All requests on the associated listener (for example, blog.contoso.com/*) are forwarded to the associated backend pool by using the associated HTTP setting.
+
+* **Path-based**: This routing rule lets you route the requests on the associated listener to a specific backend pool, based on the URL in the request. If the path of the URL in a request matches the path pattern in a path-based rule, the rule routes that request. It applies the path pattern only to the URL path, not to its query parameters. If the URL path on a listener request doesn't match any of the path-based rules, it routes the request to the default backend pool and HTTP settings.
+
+A `request_routing_rules` block supports the following:
+
+| Name | Description
+|--|--
+`name`|The Name of this Request Routing Rule.
+`rule_type`|The Type of Routing that should be used for this Rule. Possible values are Basic and PathBasedRouting.
+`http_listener_name`|The Name of the HTTP Listener which should be used for this Routing Rule.
+`backend_address_pool_name`|The Name of the Backend Address Pool which should be used for this Routing Rule. Cannot be set if `redirect_configuration_name` is set.
+`backend_http_settings_name`|The Name of the Backend HTTP Settings Collection which should be used for this Routing Rule. Cannot be set if `redirect_configuration_name` is set.
+`redirect_configuration_name`|The Name of the Redirect Configuration which should be used for this Routing Rule. Cannot be set if either `backend_address_pool_name` or `backend_http_settings_name` is set.
+`rewrite_rule_set_name`|The Name of the Rewrite Rule Set which should be used for this Routing Rule. Only valid for `v2 SKUs`.
+`url_path_map_name`|The Name of the URL Path Map which should be associated with this Routing Rule.
+
+> [!NOTE]
+> backend_address_pool_name, backend_http_settings_name, redirect_configuration_name, and rewrite_rule_set_name are applicable only when rule_type is Basic.
+>
+
 ## Advanced Usage of the Module
 
 ### `ssl_policy` - Application Gateway TLS policy
@@ -160,9 +296,9 @@ module "application-gateway" {
 Application Gateway has three predefined security policies. You can configure your gateway with any of these policies to get the appropriate level of security. The policy names are annotated by the year and month in which they were configured. If not specified, Defaults to `AppGwSslPolicy20150501`.
 
 Policy Name |Min. Protocol Version
---------|----------------------------
-`AppGwSslPolicy20150501`|TLSv1_0 
-`AppGwSslPolicy20170401`|TLSv1_1 
+------------|----------------------------
+`AppGwSslPolicy20150501`|TLSv1_0
+`AppGwSslPolicy20170401`|TLSv1_1
 `AppGwSslPolicy20170401S`|TLSv1_2
 
 ```hcl
@@ -180,6 +316,23 @@ module "application-gateway" {
   # .... omitted
 }
 ```
+
+### `ssl_certificates` - TLS termination and end to end TLS with Application Gateway
+
+When configured with end-to-end TLS communication mode, Application Gateway terminates the TLS sessions at the gateway and decrypts user traffic. It then applies the configured rules to select an appropriate backend pool instance to route traffic to. Application Gateway then initiates a new TLS connection to the backend server and re-encrypts data using the backend server's public key certificate before transmitting the request to the backend. Any response from the web server goes through the same process back to the end user. End-to-end TLS is enabled by setting protocol setting in Backend HTTP Setting to HTTPS, which is then applied to a backend pool.
+
+The certificate on the listener requires the entire certificate chain to be uploaded (the root certificate from the CA, the intermediates and the leaf certificate) to establish the chain of trust. Authentication and trusted root certificate setup are not required for trusted Azure services such as Azure App Service. They are considered trusted by default.
+
+For TLS termination with Key Vault certificates to work properly existing user-assigned managed identity, which Application Gateway uses to retrieve certificates from `Key Vault`, should be defined via `identity` block. Additionally, access policies in the Key Vault to allow the `identity` to be granted get access to the secret should be defined and requires `v2 SKU`
+
+A ssl_certificates block supports the following:
+
+| Name | Description
+|--|--
+`name`|The Name of the SSL certificate that is unique within this Application Gateway
+`data`|PFX certificate. Required if `key_vault_secret_id` is not set.
+`password`|Password for the pfx file specified in data. Required if `data` is set.
+`key_vault_secret_id`|Secret Id of (base-64 encoded unencrypted pfx) Secret or Certificate object stored in Azure `KeyVault`. You need to enable `soft delete` for keyvault to use this feature. Required if `data` is not set.
 
 ### `custom_error_configuration` - Create Application Gateway custom error pages
 
@@ -313,7 +466,7 @@ module "application-gateway" {
 }
 ```
 
-### `redirect_configuration` -  redirect traffic 
+### `redirect_configuration` -  redirect traffic
 
 You can use application gateway to redirect traffic. It has a generic redirection mechanism which allows for redirecting traffic received at one listener to another listener or to an external site. A common redirection scenario for many web applications is to support automatic HTTP to HTTPS redirection to ensure all communication between application and its users occurs over an encrypted path.
 
@@ -336,7 +489,7 @@ Application Gateway allows you to rewrite selected content of requests and respo
 
 > HTTP header and URL rewrite features are only available for the Application Gateway v2 SKU
 
-For more informaiton check [Microsoft documentation](https://docs.microsoft.com/en-us/azure/application-gateway/rewrite-http-headers-url). 
+For more informaiton check [Microsoft documentation](https://docs.microsoft.com/en-us/azure/application-gateway/rewrite-http-headers-url).
 
 ### `waf_configuration` - Azure Web Application Firewall
 
