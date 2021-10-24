@@ -59,7 +59,7 @@ variable "sku" {
   type = object({
     name     = string
     tier     = string
-    capacity = number
+    capacity = optional(number)
   })
 }
 
@@ -118,6 +118,7 @@ variable "http_listeners" {
     require_sni          = optional(bool)
     ssl_certificate_name = optional(string)
     firewall_policy_id   = optional(string)
+    ssl_profile_name     = optional(string)
     custom_error_configuration = optional(list(object({
       status_code           = string
       custom_error_page_url = string

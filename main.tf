@@ -65,7 +65,7 @@ resource "azurerm_application_gateway" "main" {
   sku {
     name     = var.sku.name
     tier     = var.sku.tier
-    capacity = var.sku.capacity
+    capacity = var.autoscale_configuration == null ? var.sku.capacity : null
   }
 
   dynamic "autoscale_configuration" {
@@ -162,6 +162,7 @@ resource "azurerm_application_gateway" "main" {
       require_sni                    = http_listener.value.ssl_certificate_name != null ? http_listener.value.require_sni : null
       ssl_certificate_name           = http_listener.value.ssl_certificate_name
       firewall_policy_id             = http_listener.value.firewall_policy_id
+      ssl_profile_name               = http_listener.value.ssl_profile_name
 
       dynamic "custom_error_configuration" {
         for_each = http_listener.value.custom_error_configuration != null ? lookup(http_listener.value, "custom_error_configuration", {}) : []
