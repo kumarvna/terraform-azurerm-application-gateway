@@ -2,70 +2,81 @@
 # Local declarations
 #---------------------------
 locals {
-  frontend_port_name             = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-feport"
-  frontend_ip_configuration_name = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-feip"
-  gateway_ip_configuration_name  = "appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gwipc"
+  frontend_port_name             = "appgw-${var.app_gateway_name}-${local.location}-feport"
+  frontend_ip_configuration_name = "appgw-${var.app_gateway_name}-${local.location}-feip"
+  gateway_ip_configuration_name  = "appgw-${var.app_gateway_name}-${local.location}-gwipc"
+
+  resource_group_name = element(coalescelist(data.azurerm_resource_group.rgrp.*.name, azurerm_resource_group.rg.*.name, [""]), 0)
+  location            = element(coalescelist(data.azurerm_resource_group.rgrp.*.location, azurerm_resource_group.rg.*.location, [""]), 0)
 }
 
 #----------------------------------------------------------
 # Resource Group, VNet, Subnet selection & Random Resources
 #----------------------------------------------------------
-data "azurerm_resource_group" "rg" {
-  name = var.resource_group_name
+data "azurerm_resource_group" "rgrp" {
+  count = var.create_resource_group == false ? 1 : 0
+  name  = var.resource_group_name
+}
+
+resource "azurerm_resource_group" "rg" {
+  count    = var.create_resource_group ? 1 : 0
+  name     = lower(var.resource_group_name)
+  location = var.location
+  tags     = merge({ "ResourceName" = format("%s", var.resource_group_name) }, var.tags, )
 }
 
 data "azurerm_virtual_network" "vnet" {
   name                = var.virtual_network_name
-  resource_group_name = data.azurerm_resource_group.rg.name
+  resource_group_name = var.vnet_resource_group_name == null ? local.resource_group_name : var.vnet_resource_group_name
 }
 
 data "azurerm_subnet" "snet" {
   name                 = var.subnet_name
   virtual_network_name = data.azurerm_virtual_network.vnet.name
-  resource_group_name  = data.azurerm_resource_group.rg.name
+  resource_group_name  = data.azurerm_virtual_network.vnet.resource_group_name
 }
 
 data "azurerm_log_analytics_workspace" "logws" {
   count               = var.log_analytics_workspace_name != null ? 1 : 0
   name                = var.log_analytics_workspace_name
-  resource_group_name = data.azurerm_resource_group.rg.name
+  resource_group_name = local.resource_group_name
 }
 
 data "azurerm_storage_account" "storeacc" {
   count               = var.storage_account_name != null ? 1 : 0
   name                = var.storage_account_name
-  resource_group_name = data.azurerm_resource_group.rg.name
+  resource_group_name = local.resource_group_name
 }
 
 #-----------------------------------
 # Public IP for application gateway
 #-----------------------------------
 resource "azurerm_public_ip" "pip" {
-  name                = lower("${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gw-pip")
-  location            = data.azurerm_resource_group.rg.location
-  resource_group_name = data.azurerm_resource_group.rg.name
+  name                = lower("${var.app_gateway_name}-${local.location}-gw-pip")
+  location            = local.location
+  resource_group_name = local.resource_group_name
   allocation_method   = var.sku.tier == "Standard" ? "Dynamic" : "Static"
   sku                 = var.sku.tier == "Standard" ? "Basic" : "Standard"
   domain_name_label   = var.domain_name_label
-  tags                = merge({ "ResourceName" = lower("${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}-gw-pip") }, var.tags, )
+  tags                = merge({ "ResourceName" = lower("${var.app_gateway_name}-${local.location}-gw-pip") }, var.tags, )
 }
 
 #----------------------------------------------
 # Application Gateway with all optional blocks
 #----------------------------------------------
 resource "azurerm_application_gateway" "main" {
-  name                = lower("appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}")
-  resource_group_name = data.azurerm_resource_group.rg.name
-  location            = data.azurerm_resource_group.rg.location
+  name                = lower("appgw-${var.app_gateway_name}-${local.location}")
+  resource_group_name = local.resource_group_name
+  location            = local.location
   enable_http2        = var.enable_http2
   zones               = var.zones
   firewall_policy_id  = var.firewall_policy_id != null ? var.firewall_policy_id : null
-  tags                = merge({ "ResourceName" = lower("appgw-${var.app_gateway_name}-${data.azurerm_resource_group.rg.location}") }, var.tags, )
+  tags                = merge({ "ResourceName" = lower("appgw-${var.app_gateway_name}-${local.location}") }, var.tags, )
 
   sku {
     name     = var.sku.name
     tier     = var.sku.tier
-    capacity = var.sku.capacity
+    capacity = var.autoscale_configuration == null ? var.sku.capacity : null
   }
 
   dynamic "autoscale_configuration" {
@@ -162,11 +173,13 @@ resource "azurerm_application_gateway" "main" {
       require_sni                    = http_listener.value.ssl_certificate_name != null ? http_listener.value.require_sni : null
       ssl_certificate_name           = http_listener.value.ssl_certificate_name
       firewall_policy_id             = http_listener.value.firewall_policy_id
+      ssl_profile_name               = http_listener.value.ssl_profile_name
+
       dynamic "custom_error_configuration" {
-        for_each = http_listener.value.custom_error_configuration[*]
+        for_each = http_listener.value.custom_error_configuration != null ? lookup(http_listener.value, "custom_error_configuration", {}) : []
         content {
-          status_code           = custom_error_configuration.value.status_code
-          custom_error_page_url = custom_error_configuration.value.custom_error_page_url
+          custom_error_page_url = lookup(custom_error_configuration.value, "custom_error_page_url", null)
+          status_code           = lookup(custom_error_configuration.value, "status_code", null)
         }
       }
     }
@@ -275,7 +288,7 @@ resource "azurerm_application_gateway" "main" {
   # URL Path Mappings (Optional)
   #----------------------------------------------------------
   dynamic "url_path_map" {
-    for_each = var.url_path_maps[*]
+    for_each = var.url_path_maps
     content {
       name                                = url_path_map.value.name
       default_backend_address_pool_name   = url_path_map.value.default_redirect_configuration_name == null ? url_path_map.value.default_backend_address_pool_name : null
@@ -284,12 +297,12 @@ resource "azurerm_application_gateway" "main" {
       default_rewrite_rule_set_name       = lookup(url_path_map.value, "default_rewrite_rule_set_name", null)
 
       dynamic "path_rule" {
-        for_each = url_path_map.value.path_rules[*]
+        for_each = lookup(url_path_map.value, "path_rules")
         content {
           name                        = path_rule.value.name
           backend_address_pool_name   = path_rule.value.backend_address_pool_name
           backend_http_settings_name  = path_rule.value.backend_http_settings_name
-          paths                       = path_rule.value.paths
+          paths                       = flatten(path_rule.value.paths)
           redirect_configuration_name = lookup(path_rule.value, "redirect_configuration_name", null)
           rewrite_rule_set_name       = lookup(path_rule.value, "rewrite_rule_set_name", null)
           firewall_policy_id          = lookup(path_rule.value, "firewall_policy_id", null)
@@ -302,7 +315,7 @@ resource "azurerm_application_gateway" "main" {
   # Redirect Configuration (Optional)
   #----------------------------------------------------------
   dynamic "redirect_configuration" {
-    for_each = var.redirect_configuration[*]
+    for_each = var.redirect_configuration
     content {
       name                 = lookup(redirect_configuration.value, "name", null)
       redirect_type        = lookup(redirect_configuration.value, "redirect_type", "Permanent")
@@ -317,7 +330,7 @@ resource "azurerm_application_gateway" "main" {
   # Custom error configuration (Optional)
   #----------------------------------------------------------
   dynamic "custom_error_configuration" {
-    for_each = var.custom_error_configuration[*]
+    for_each = var.custom_error_configuration
     content {
       custom_error_page_url = lookup(custom_error_configuration.value, "custom_error_page_url", null)
       status_code           = lookup(custom_error_configuration.value, "status_code", null)
@@ -328,7 +341,7 @@ resource "azurerm_application_gateway" "main" {
   # Rewrite Rules Set configuration (Optional)
   #----------------------------------------------------------
   dynamic "rewrite_rule_set" {
-    for_each = var.rewrite_rule_set[*]
+    for_each = var.rewrite_rule_set
     content {
       name = var.rewrite_rule_set.name
 
@@ -390,7 +403,7 @@ resource "azurerm_application_gateway" "main" {
       rule_set_version         = lookup(waf_configuration.value, "rule_set_version", "3.1")
       file_upload_limit_mb     = lookup(waf_configuration.value, "file_upload_limit_mb", 100)
       request_body_check       = lookup(waf_configuration.value, "request_body_check", true)
-      max_request_body_size_kb = lookup(waf_configuration.value, max_request_body_size_kb, 128)
+      max_request_body_size_kb = lookup(waf_configuration.value, "max_request_body_size_kb", 128)
 
       dynamic "disabled_rule_group" {
         for_each = waf_configuration.value.disabled_rule_group
@@ -409,6 +422,12 @@ resource "azurerm_application_gateway" "main" {
         }
       }
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      tags,
+    ]
   }
 }
 

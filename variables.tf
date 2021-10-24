@@ -1,3 +1,8 @@
+variable "create_resource_group" {
+  description = "Whether to create resource group and use it for all networking resources"
+  default     = false
+}
+
 variable "resource_group_name" {
   description = "A container that holds related resources for an Azure solution"
   default     = ""
@@ -11,6 +16,11 @@ variable "location" {
 variable "virtual_network_name" {
   description = "The name of the virtual network"
   default     = ""
+}
+
+variable "vnet_resource_group_name" {
+  description = "The resource group name where the virtual network is created"
+  default     = null
 }
 
 variable "subnet_name" {
@@ -59,7 +69,7 @@ variable "sku" {
   type = object({
     name     = string
     tier     = string
-    capacity = number
+    capacity = optional(number)
   })
 }
 
@@ -118,6 +128,7 @@ variable "http_listeners" {
     require_sni          = optional(bool)
     ssl_certificate_name = optional(string)
     firewall_policy_id   = optional(string)
+    ssl_profile_name     = optional(string)
     custom_error_configuration = optional(list(object({
       status_code           = string
       custom_error_page_url = string
@@ -253,15 +264,15 @@ variable "waf_configuration" {
     file_upload_limit_mb     = optional(number)
     request_body_check       = optional(bool)
     max_request_body_size_kb = optional(number)
-    disabled_rule_group = object({
+    disabled_rule_group = optional(list(object({
       rule_group_name = string
-      rules           = list(string)
-    })
-    exclusion = object({
+      rules           = optional(list(string))
+    })))
+    exclusion = optional(list(object({
       match_variable          = string
-      selector_match_operator = string
-      selector                = string
-    })
+      selector_match_operator = optional(string)
+      selector                = optional(string)
+    })))
   })
   default = null
 }
