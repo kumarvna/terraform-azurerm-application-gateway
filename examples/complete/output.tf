@@ -128,31 +128,6 @@ output "url_path_map_default_redirect_configuration_id" {
   value       = module.application-gateway.url_path_map_default_redirect_configuration_id
 }
 
-output "url_path_map_path_rule_id" {
-  description = "The ID of the Path Rule associated with URL Path Map"
-  value       = module.application-gateway.url_path_map_path_rule_id
-}
-
-output "url_path_map_path_rule_backend_address_pool_id" {
-  description = "The ID of the Backend Address Pool used in this Path Rule"
-  value       = module.application-gateway.url_path_map_path_rule_backend_address_pool_id
-}
-
-output "url_path_map_path_rule_backend_http_settings_id" {
-  description = "The ID of the Backend HTTP Settings Collection used in this Path Rule"
-  value       = module.application-gateway.url_path_map_path_rule_backend_http_settings_id
-}
-
-output "url_path_map_path_rule_redirect_configuration_id" {
-  description = "The ID of the Redirect Configuration used in this Path Rule"
-  value       = module.application-gateway.url_path_map_path_rule_redirect_configuration_id
-}
-
-output "url_path_map_path_rule_rewrite_rule_set_id" {
-  description = "The ID of the Rewrite Rule Set used in this Path Rule"
-  value       = module.application-gateway.url_path_map_path_rule_rewrite_rule_set_id
-}
-
 output "custom_error_configuration_id" {
   description = "The ID of the Custom Error Configuration"
   value       = module.application-gateway.custom_error_configuration_id

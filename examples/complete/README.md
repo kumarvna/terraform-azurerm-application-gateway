@@ -22,7 +22,7 @@ resource "azurerm_user_assigned_identity" "example" {
 
 module "application-gateway" {
   source  = "kumarvna/application-gateway/azurerm"
-  version = "1.0.0"
+  version = "1.1.0"
 
   # Resource Group and location, VNet and Subnet detials (Required)
   resource_group_name  = "rg-shared-westeurope-01"
@@ -62,7 +62,8 @@ module "application-gateway" {
       path                  = "/"
       enable_https          = true
       request_timeout       = 30
-      probe_name            = "appgw-testgateway-westeurope-probe1"
+      # `probe_name` argument is required if you are defing health probes.  
+      #   probe_name            = "appgw-testgateway-westeurope-probe1"
       connection_draining = {
         enable_connection_draining = true
         drain_timeout_sec          = 300
@@ -89,16 +90,6 @@ module "application-gateway" {
       name                 = "appgw-testgateway-westeurope-be-htln01"
       ssl_certificate_name = "appgw-testgateway-westeurope-ssl01"
       host_name            = null
-      custom_error_configuration = [
-        {
-          custom_error_page_url = "https://stdiagfortesting.blob.core.windows.net/appgateway/custom_error_403_page.html"
-          status_code           = "HttpStatus403"
-        },
-        {
-          custom_error_page_url = "https://stdiagfortesting.blob.core.windows.net/appgateway/custom_error_502_page.html"
-          status_code           = "HttpStatus502"
-        }
-      ]
     }
   ]
 
@@ -118,83 +109,14 @@ module "application-gateway" {
     }
   ]
 
-  # Application Gateway TLS policy. If not specified, Defaults to `AppGwSslPolicy20150501`
-  # Application Gateway has three predefined security policies to get the appropriate level of security.
-  # `AppGwSslPolicy20150501` - MinProtocolVersion(TLSv1_0), `AppGwSslPolicy20170401` - MinProtocolVersion(TLSv1_1) 
-  # `AppGwSslPolicy20170401S` - MinProtocolVersion(TLSv1_2)
-  ssl_policy = {
-    policy_type = "Predefined"
-    policy_name = "AppGwSslPolicy20170401S"
-  }
-
   # TLS termination (previously known as Secure Sockets Layer (SSL) Offloading)
   # The certificate on the listener requires the entire certificate chain (PFX certificate) to be uploaded to establish the chain of trust.
   # Authentication and trusted root certificate setup are not required for trusted Azure services such as Azure App Service.
   ssl_certificates = [{
     name     = "appgw-testgateway-westeurope-ssl01"
     data     = "./keyBag.pfx"
-    password = "P@$$w0rd123"
+    password = "lats1234" #"P@$$w0rd123"
   }]
-
-  # Add custom error pages instead of displaying default error pages when a request can't reach the backend
-  # Custom error pages can be defined at the global level and the listener level:
-  # `Global level` - the error page applies to traffic for all the web applications deployed on that application gateway.
-  # `Listener level` - the error page is applied to traffic received on that listener.
-  # `Both` - the custom error page defined at the listener level overrides the one set at global level.
-  custom_error_configuration = [
-    {
-      custom_error_page_url = "https://stdiagfortesting.blob.core.windows.net/appgateway/custom_error_403_page.html"
-      status_code           = "HttpStatus403"
-    },
-    {
-      custom_error_page_url = "https://stdiagfortesting.blob.core.windows.net/appgateway/custom_error_502_page.html"
-      status_code           = "HttpStatus502"
-    }
-  ]
-
-  # URL path-based redirection allows to route traffic to back-end server pools based on URL Paths of the request.
-  # For both the v1 and v2 SKUs, rules are processed in the order they are listed in the portal. If a basic listener is 
-  # listed first and matches an incoming request, it gets processed by that listener. However, it is highly recommended 
-  # to configure multi-site listeners first prior to configuring a basic listener. This ensures that traffic gets routed 
-  # to the right back end. 
-  url_path_maps = [
-    {
-      name                               = "testgateway-url-path"
-      default_backend_address_pool_name  = "appgw-testgateway-westeurope-bapool01"
-      default_backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set1"
-      path_rules = [
-        {
-          name                       = "api"
-          paths                      = ["/api/*"]
-          backend_address_pool_name  = "appgw-testgateway-westeurope-bapool01"
-          backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set1"
-        },
-        {
-          name                       = "videos"
-          paths                      = ["/videos/*"]
-          backend_address_pool_name  = "appgw-testgateway-westeurope-bapool02"
-          backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set2"
-        }
-      ]
-    }
-  ]
-
-  # By default, an application gateway monitors the health of all resources in its backend pool and automatically removes unhealthy ones. 
-  # It then monitors unhealthy instances and adds them back to the healthy backend pool when they become available and respond to health probes.
-  # must allow incoming Internet traffic on TCP ports 65503-65534 for the Application Gateway v1 SKU, and TCP ports 65200-65535 
-  # for the v2 SKU with the destination subnet as Any and source as GatewayManager service tag. This port range is required for Azure infrastructure communication.
-  # Additionally, outbound Internet connectivity can't be blocked, and inbound traffic coming from the AzureLoadBalancer tag must be allowed.
-  health_probes = [
-    {
-      name                = "appgw-testgateway-westeurope-probe1"
-      host                = "127.0.0.1"
-      interval            = 30
-      path                = "/"
-      port                = 443
-      timeout             = 30
-      unhealthy_threshold = 3
-    }
-  ]
 
   # A list with a single user managed identity id to be assigned to access Keyvault
   identity_ids = ["${azurerm_user_assigned_identity.example.id}"]
