@@ -303,7 +303,7 @@ resource "azurerm_application_gateway" "main" {
   # Redirect Configuration (Optional)
   #----------------------------------------------------------
   dynamic "redirect_configuration" {
-    for_each = var.redirect_configuration[*]
+    for_each = var.redirect_configuration
     content {
       name                 = lookup(redirect_configuration.value, "name", null)
       redirect_type        = lookup(redirect_configuration.value, "redirect_type", "Permanent")
@@ -391,7 +391,7 @@ resource "azurerm_application_gateway" "main" {
       rule_set_version         = lookup(waf_configuration.value, "rule_set_version", "3.1")
       file_upload_limit_mb     = lookup(waf_configuration.value, "file_upload_limit_mb", 100)
       request_body_check       = lookup(waf_configuration.value, "request_body_check", true)
-      max_request_body_size_kb = lookup(waf_configuration.value, max_request_body_size_kb, 128)
+      max_request_body_size_kb = lookup(waf_configuration.value, "max_request_body_size_kb", 128)
 
       dynamic "disabled_rule_group" {
         for_each = waf_configuration.value.disabled_rule_group

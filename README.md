@@ -55,6 +55,7 @@ module "application-gateway" {
   # An application gateway routes traffic to the backend servers using the port, protocol, and other settings
   # The port and protocol used to check traffic is encrypted between the application gateway and backend servers
   # List of backend HTTP settings can be added here.  
+  # `probe_name` argument is required if you are defing health probes.
   backend_http_settings = [
     {
       name                  = "appgw-testgateway-westeurope-be-http-set1"
@@ -62,7 +63,7 @@ module "application-gateway" {
       path                  = "/"
       enable_https          = true
       request_timeout       = 30
-      probe_name            = "appgw-testgateway-westeurope-probe1"
+      probe_name            = "appgw-testgateway-westeurope-probe1" # Remove this if `health_probes` object is not defined.
       connection_draining = {
         enable_connection_draining = true
         drain_timeout_sec          = 300
@@ -89,16 +90,6 @@ module "application-gateway" {
       name                 = "appgw-testgateway-westeurope-be-htln01"
       ssl_certificate_name = "appgw-testgateway-westeurope-ssl01"
       host_name            = null
-      custom_error_configuration = [
-        {
-          custom_error_page_url = "https://stdiagfortesting.blob.core.windows.net/appgateway/custom_error_403_page.html"
-          status_code           = "HttpStatus403"
-        },
-        {
-          custom_error_page_url = "https://stdiagfortesting.blob.core.windows.net/appgateway/custom_error_502_page.html"
-          status_code           = "HttpStatus502"
-        }
-      ]
     }
   ]
 
@@ -118,15 +109,6 @@ module "application-gateway" {
     }
   ]
 
-  # Application Gateway TLS policy. If not specified, Defaults to `AppGwSslPolicy20150501`
-  # Application Gateway has three predefined security policies to get the appropriate level of security.
-  # `AppGwSslPolicy20150501` - MinProtocolVersion(TLSv1_0), `AppGwSslPolicy20170401` - MinProtocolVersion(TLSv1_1) 
-  # `AppGwSslPolicy20170401S` - MinProtocolVersion(TLSv1_2)
-  ssl_policy = {
-    policy_type = "Predefined"
-    policy_name = "AppGwSslPolicy20170401S"
-  }
-
   # TLS termination (previously known as Secure Sockets Layer (SSL) Offloading)
   # The certificate on the listener requires the entire certificate chain (PFX certificate) to be uploaded to establish the chain of trust.
   # Authentication and trusted root certificate setup are not required for trusted Azure services such as Azure App Service.
@@ -135,49 +117,6 @@ module "application-gateway" {
     data     = "./keyBag.pfx"
     password = "P@$$w0rd123"
   }]
-
-  # Add custom error pages instead of displaying default error pages when a request can't reach the backend
-  # Custom error pages can be defined at the global level and the listener level:
-  # `Global level` - the error page applies to traffic for all the web applications deployed on that application gateway.
-  # `Listener level` - the error page is applied to traffic received on that listener.
-  # `Both` - the custom error page defined at the listener level overrides the one set at global level.
-  custom_error_configuration = [
-    {
-      custom_error_page_url = "https://stdiagfortesting.blob.core.windows.net/appgateway/custom_error_403_page.html"
-      status_code           = "HttpStatus403"
-    },
-    {
-      custom_error_page_url = "https://stdiagfortesting.blob.core.windows.net/appgateway/custom_error_502_page.html"
-      status_code           = "HttpStatus502"
-    }
-  ]
-
-  # URL path-based redirection allows to route traffic to back-end server pools based on URL Paths of the request.
-  # For both the v1 and v2 SKUs, rules are processed in the order they are listed in the portal. If a basic listener is 
-  # listed first and matches an incoming request, it gets processed by that listener. However, it is highly recommended 
-  # to configure multi-site listeners first prior to configuring a basic listener. This ensures that traffic gets routed 
-  # to the right back end. 
-  url_path_maps = [
-    {
-      name                               = "testgateway-url-path"
-      default_backend_address_pool_name  = "appgw-testgateway-westeurope-bapool01"
-      default_backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set1"
-      path_rules = [
-        {
-          name                       = "api"
-          paths                      = ["/api/*"]
-          backend_address_pool_name  = "appgw-testgateway-westeurope-bapool01"
-          backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set1"
-        },
-        {
-          name                       = "videos"
-          paths                      = ["/videos/*"]
-          backend_address_pool_name  = "appgw-testgateway-westeurope-bapool02"
-          backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set2"
-        }
-      ]
-    }
-  ]
 
   # By default, an application gateway monitors the health of all resources in its backend pool and automatically removes unhealthy ones. 
   # It then monitors unhealthy instances and adds them back to the healthy backend pool when they become available and respond to health probes.
@@ -213,6 +152,241 @@ module "application-gateway" {
   }
 }
 ```
+
+## Advanced Usage of the Module
+
+### `ssl_policy` - Application Gateway TLS policy
+
+Application Gateway has three predefined security policies. You can configure your gateway with any of these policies to get the appropriate level of security. The policy names are annotated by the year and month in which they were configured. If not specified, Defaults to `AppGwSslPolicy20150501`.
+
+Policy Name |Min. Protocol Version
+--------|----------------------------
+`AppGwSslPolicy20150501`|TLSv1_0 
+`AppGwSslPolicy20170401`|TLSv1_1 
+`AppGwSslPolicy20170401S`|TLSv1_2
+
+```hcl
+module "application-gateway" {
+  source  = "kumarvna/application-gateway/azurerm"
+  version = "1.1.0"
+
+  # .... omitted
+
+  ssl_policy = {
+    policy_type = "Predefined"
+    policy_name = "AppGwSslPolicy20170401S"
+  }
+
+  # .... omitted
+}
+```
+
+### `custom_error_configuration` - Create Application Gateway custom error pages
+
+Application Gateway allows you to create custom error pages instead of displaying default error pages. You can use your own branding and layout using a custom error page.
+
+Custom error pages are supported for the following two scenarios:
+
+* **Maintenance page** - This custom error page is sent instead of a 502 bad gateway page. It's shown when Application Gateway has no backend to route traffic to.
+* **Unauthorized access page** - This custom error page is sent instead of a 403 unauthorized access page. It's shown when the Application Gateway WAF detects malicious traffic and blocks it.
+
+Custom error pages can be defined at the global level and the listener level:
+
+* **Global level** - the error page applies to traffic for all the web applications deployed on that application gateway.
+* **Listener level** - the error page is applied to traffic received on that listener.
+* **Both** - the custom error page defined at the listener level overrides the one set at global level.
+
+> The size of the error page must be less than 1 MB. You may reference either internal or external images/CSS for this HTML file. For externally referenced resources, use absolute URLs that are publicly accessible.
+
+```hcl
+module "application-gateway" {
+  source  = "kumarvna/application-gateway/azurerm"
+  version = "1.1.0"
+
+  # .... omitted
+
+  http_listeners = [
+    {
+      name                 = "appgw-testgateway-westeurope-be-htln01"
+      ssl_certificate_name = "appgw-testgateway-westeurope-ssl01"
+      host_name            = null
+
+      /*       custom_error_configuration = [
+        {
+          custom_error_page_url = "https://example.blob.core.windows.net/appgateway/custom_error_403_page.html"
+          status_code           = "HttpStatus403"
+        },
+        {
+          custom_error_page_url = "https://example.blob.core.windows.net/appgateway/custom_error_502_page.html"
+          status_code           = "HttpStatus502"
+        }
+      ] */
+    }
+  ]
+
+  custom_error_configuration = [
+    {
+      custom_error_page_url = "https://example.blob.core.windows.net/appgateway/custom_error_403_page.html"
+      status_code           = "HttpStatus403"
+    },
+    {
+      custom_error_page_url = "https://example.blob.core.windows.net/appgateway/custom_error_502_page.html"
+      status_code           = "HttpStatus502"
+    }
+  ]
+
+  # .... omitted
+}
+```
+
+### `url_path_maps` - URL Path Based Routing
+
+URL Path Based Routing allows you to route traffic to back-end server pools based on URL Paths of the request. One of the scenarios is to route requests for different content types to different backend server pools.
+
+> For both the v1 and v2 SKUs, rules are processed in the order they are listed in the portal. If a basic listener is listed first and matches an incoming request, it gets processed by that listener. However, it is highly recommended to configure multi-site listeners first prior to configuring a basic listener. This ensures that traffic gets routed to the right back end.
+
+The `url_path_maps` is used to specify Path patterns to back-end server pool mappings. The following code example is the snippet of `url_path_maps` from example file.
+
+```hcl
+module "application-gateway" {
+  source  = "kumarvna/application-gateway/azurerm"
+  version = "1.1.0"
+
+  # .... omitted
+
+  url_path_maps = [
+    {
+      name                               = "testgateway-url-path"
+      default_backend_address_pool_name  = "appgw-testgateway-westeurope-bapool01"
+      default_backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set1"
+      path_rules = [
+        {
+          name                       = "api"
+          paths                      = ["/api/*"]
+          backend_address_pool_name  = "appgw-testgateway-westeurope-bapool01"
+          backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set1"
+        },
+        {
+          name                       = "videos"
+          paths                      = ["/videos/*"]
+          backend_address_pool_name  = "appgw-testgateway-westeurope-bapool02"
+          backend_http_settings_name = "appgw-testgateway-westeurope-be-http-set2"
+        }
+      ]
+    }
+  ]
+
+  # .... omitted
+}
+```
+
+### `health_probes` - Application Gateway health monitoring
+
+By default, an application gateway monitors the health of all resources in its backend pool and automatically removes unhealthy ones.  It then monitors unhealthy instances and adds them back to the healthy backend pool when they become available and respond to health probes.
+
+You must allow incoming Internet traffic on `TCP` ports `65503-65534` for the Application Gateway `v1 SKU`, and TCP ports `65200-65535` for the `v2 SKU` with the destination subnet as `Any` and source as `GatewayManager` service tag. This port range is required for Azure infrastructure communication.
+
+Additionally, outbound Internet connectivity can't be blocked, and inbound traffic coming from the `AzureLoadBalancer` tag must be allowed.
+
+You can specify a list of health probes to monitor application gateway health. The following code example is the snippet of `health_probes` from example file.
+
+```hcl
+module "application-gateway" {
+  source  = "kumarvna/application-gateway/azurerm"
+  version = "1.1.0"
+
+  # .... omitted
+
+  health_probes = [
+    {
+      name                = "appgw-testgateway-westeurope-probe1"
+      host                = "127.0.0.1"
+      interval            = 30
+      path                = "/"
+      port                = 443
+      timeout             = 30
+      unhealthy_threshold = 3
+    }
+  ]
+
+  # .... omitted
+}
+```
+
+### `redirect_configuration` -  redirect traffic 
+
+You can use application gateway to redirect traffic. It has a generic redirection mechanism which allows for redirecting traffic received at one listener to another listener or to an external site. A common redirection scenario for many web applications is to support automatic HTTP to HTTPS redirection to ensure all communication between application and its users occurs over an encrypted path.
+
+The following types of redirection are supported:
+
+* 301 Permanent Redirect
+* 302 Found
+* 303 See Other
+* 307 Temporary Redirect
+
+Application Gateway redirection support offers the following capabilities:
+
+* **Global redirection**: Redirects from one listener to another listener on the gateway. This enables HTTP to HTTPS redirection on a site.
+
+* **Path-based redirection**: This type of redirection enables HTTP to HTTPS redirection only on a specific site area, for example a shopping cart area denoted by /cart/*.
+
+### `rewrite_rule_set` - Rewrite HTTP headers and URL's
+
+Application Gateway allows you to rewrite selected content of requests and responses. With this feature, you can translate URLs, query string parameters as well as modify request and response headers. It also allows you to add conditions to ensure that the URL or the specified headers are rewritten only when certain conditions are met. These conditions are based on the request and response information.
+
+> HTTP header and URL rewrite features are only available for the Application Gateway v2 SKU
+
+For more informaiton check [Microsoft documentation](https://docs.microsoft.com/en-us/azure/application-gateway/rewrite-http-headers-url). 
+
+### `waf_configuration` - Azure Web Application Firewall
+
+Azure Web Application Firewall (WAF) on Azure Application Gateway provides centralized protection of your web applications from common exploits and vulnerabilities. Web applications are increasingly targeted by malicious attacks that exploit commonly known vulnerabilities. SQL injection and cross-site scripting are among the most common attacks.
+
+The `waf_configuration` object is used to specify waf configuration, disabled rule groups and exclusions. The following code example is the snippet of `waf_configuration` from example file.
+
+```hcl
+module "application-gateway" {
+  source  = "kumarvna/application-gateway/azurerm"
+  version = "1.1.0"
+
+  # .... omitted
+
+  waf_configuration = {
+    firewall_mode            = "Detection"
+    rule_set_version         = "3.1"
+    file_upload_limit_mb     = 100
+    max_request_body_size_kb = 128
+
+    disabled_rule_group = [
+      {
+        rule_group_name = "REQUEST-930-APPLICATION-ATTACK-LFI"
+        rules           = ["930100", "930110"]
+      },
+      {
+        rule_group_name = "REQUEST-920-PROTOCOL-ENFORCEMENT"
+        rules           = ["920160"]
+      }
+    ]
+
+    exclusion = [
+      {
+        match_variable          = "RequestCookieNames"
+        selector                = "SomeCookie"
+        selector_match_operator = "Equals"
+      },
+      {
+        match_variable          = "RequestHeaderNames"
+        selector                = "referer"
+        selector_match_operator = "Equals"
+      }
+    ]
+  }
+
+  # .... omitted
+}
+```
+
+For more information on Web Application Firewall CRS rule groups and rules, [visit Microsoft documentation](https://docs.microsoft.com/en-us/azure/web-application-firewall/ag/application-gateway-crs-rulegroups-rules?tabs=owasp32).
 
 ## Recommended naming and tagging conventions
 

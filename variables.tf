@@ -253,15 +253,15 @@ variable "waf_configuration" {
     file_upload_limit_mb     = optional(number)
     request_body_check       = optional(bool)
     max_request_body_size_kb = optional(number)
-    disabled_rule_group = object({
+    disabled_rule_group = optional(list(object({
       rule_group_name = string
-      rules           = list(string)
-    })
-    exclusion = object({
+      rules           = optional(list(string))
+    })))
+    exclusion = optional(list(object({
       match_variable          = string
-      selector_match_operator = string
-      selector                = string
-    })
+      selector_match_operator = optional(string)
+      selector                = optional(string)
+    })))
   })
   default = null
 }
