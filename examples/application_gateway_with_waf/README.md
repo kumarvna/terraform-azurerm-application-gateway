@@ -36,8 +36,8 @@ module "application-gateway" {
   # SKU requires `name`, `tier` to use for this Application Gateway
   # `Capacity` property is optional if `autoscale_configuration` is set
   sku = {
-    name = "Standard_v2"
-    tier = "Standard_v2"
+    name = "WAF_v2"
+    tier = "WAF_v2"
   }
 
   autoscale_configuration = {
