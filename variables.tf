@@ -1,3 +1,8 @@
+variable "create_resource_group" {
+  description = "Whether to create resource group and use it for all networking resources"
+  default     = false
+}
+
 variable "resource_group_name" {
   description = "A container that holds related resources for an Azure solution"
   default     = ""
@@ -11,6 +16,11 @@ variable "location" {
 variable "virtual_network_name" {
   description = "The name of the virtual network"
   default     = ""
+}
+
+variable "vnet_resource_group_name" {
+  description = "The resource group name where the virtual network is created"
+  default     = null
 }
 
 variable "subnet_name" {
