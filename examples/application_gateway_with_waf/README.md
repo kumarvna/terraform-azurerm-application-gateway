@@ -34,9 +34,13 @@ module "application-gateway" {
   # SKU requires `name`, `tier` to use for this Application Gateway
   # `Capacity` property is optional if `autoscale_configuration` is set
   sku = {
-    name     = "WAF_v2"
-    tier     = "WAF_v2"
-    capacity = 1
+    name = "Standard_v2"
+    tier = "Standard_v2"
+  }
+
+  autoscale_configuration = {
+    min_capacity = 1
+    max_capacity = 15
   }
 
   # A backend pool routes request to backend servers, which serve the request.
@@ -63,7 +67,7 @@ module "application-gateway" {
       path                  = "/"
       enable_https          = true
       request_timeout       = 30
-      probe_name            = "appgw-testgateway-westeurope-probe1" # Remove this if `health_probes` object is not defined.
+      # probe_name            = "appgw-testgateway-westeurope-probe1" # Remove this if `health_probes` object is not defined.
       connection_draining = {
         enable_connection_draining = true
         drain_timeout_sec          = 300

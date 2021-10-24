@@ -34,9 +34,13 @@ module "application-gateway" {
   # SKU requires `name`, `tier` to use for this Application Gateway
   # `Capacity` property is optional if `autoscale_configuration` is set
   sku = {
-    name     = "Standard_v2"
-    tier     = "Standard_v2"
-    capacity = 1
+    name = "Standard_v2"
+    tier = "Standard_v2"
+  }
+
+  autoscale_configuration = {
+    min_capacity = 1
+    max_capacity = 15
   }
 
   # A backend pool routes request to backend servers, which serve the request.
